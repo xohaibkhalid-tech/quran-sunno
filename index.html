@@ -54,6 +54,8 @@ button:focus-visible{outline:5px solid #fff;outline-offset:3px}
   background:var(--accent);color:var(--accent-fg);border-color:transparent;font-size:2.2rem;
 }
 .hero small{font-size:1.1rem;font-weight:500;opacity:.85}
+#player-view:not([hidden]){min-height:calc(100svh - 32px)}
+#player-view #playPause{flex:1 1 auto;min-height:48svh;font-size:2rem}
 .hero.tall{min-height:300px;min-height:min(46svh,440px)}
 .hero.on{animation:pulse 1.2s ease-in-out infinite}
 @keyframes pulse{50%{box-shadow:0 0 0 14px rgba(242,183,60,.35)}}
@@ -89,7 +91,7 @@ svg{flex:none}
   <header>
     <h1 tabindex="-1">قرآن سنیں</h1>
     <p class="greet">السلام علیکم</p>
-    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v8</p>
+    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v9</p>
   </header>
 
   <button id="micBtn" type="button" class="hero" aria-label="بولنے کے لیے دبائیں، پھر سورہ کا نام بولیں">
