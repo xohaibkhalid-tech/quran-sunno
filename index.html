@@ -89,7 +89,7 @@ svg{flex:none}
   <header>
     <h1 tabindex="-1">قرآن سنیں</h1>
     <p class="greet">السلام علیکم</p>
-    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v7</p>
+    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v8</p>
   </header>
 
   <button id="micBtn" type="button" class="hero" aria-label="بولنے کے لیے دبائیں، پھر سورہ کا نام بولیں">
@@ -936,7 +936,6 @@ function wire() {
   $('langBtn').onclick = cycleLang;
   document.addEventListener('pointerdown', e => {
     const b = e.target && e.target.closest ? e.target.closest('button') : null;
-    if (b && (b.id === 'micBtn' || b.id === 'plMic' || b.id === 'zMic')) return;
     unlock();
   }, true);
   $('playPause').onclick = () => { if (P.want) pausePlayback(); else resumePlayback(); };
