@@ -89,7 +89,7 @@ svg{flex:none}
   <header>
     <h1 tabindex="-1">قرآن سنیں</h1>
     <p class="greet">السلام علیکم</p>
-    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v4</p>
+    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v5</p>
   </header>
 
   <button id="micBtn" type="button" class="hero" aria-label="بولنے کے لیے دبائیں، پھر سورہ کا نام بولیں">
@@ -109,7 +109,7 @@ svg{flex:none}
   <div id="quick" class="grid"></div>
 
   <button id="zikrBtn" type="button" class="wide">ذکر اور درود</button>
-  <button id="langBtn" type="button" aria-label="مائیک کی زبان بدلیں">مائیک کی زبان: اردو</button>
+  <button id="langBtn" type="button" aria-label="مائیک کی زبان بدلیں">Mic language: Urdu</button>
 
   <h2>تمام سورتیں</h2>
   <div id="allSurahs" class="list"></div>
@@ -652,13 +652,13 @@ function micUI(on) {
   ['micBtn', 'plMic', 'zMic'].forEach(id => { $(id).classList.toggle('on', on); });
 }
 const LANGS = ['ur-PK', 'hi-IN', 'en-IN'];
-const LANG_NAMES = { 'ur-PK': 'اردو', 'hi-IN': 'ہندی', 'en-IN': 'انگلش' };
+const LANG_NAMES = { 'ur-PK': 'Urdu', 'hi-IN': 'Hindi', 'en-IN': 'English' };
 let recTimer = 0;
 function getLang() { const l = lsGet('qs_lang'); return LANGS.indexOf(l) >= 0 ? l : 'ur-PK'; }
-function refreshLangBtn() { $('langBtn').textContent = 'مائیک کی زبان: ' + LANG_NAMES[getLang()]; }
+function refreshLangBtn() { $('langBtn').textContent = 'Mic language: ' + LANG_NAMES[getLang()]; }
 function cycleLang() {
   const n = LANGS[(LANGS.indexOf(getLang()) + 1) % LANGS.length];
-  lsSet('qs_lang', n); refreshLangBtn(); announce('مائیک کی زبان: ' + LANG_NAMES[n]);
+  lsSet('qs_lang', n); refreshLangBtn(); announce('Mic language: ' + LANG_NAMES[n]);
 }
 function stopListening() {
   const r = rec; rec = null;
@@ -704,7 +704,7 @@ function attempt(li, tries, resumeAfter) {
     alts = [];
     for (let i = 0; i < res.length; i++) alts.push(res[i].transcript);
     if (res.isFinal) { conclude(); try { r.stop(); } catch (x) {} }
-    else announce('سن رہا ہوں: ' + (alts[0] || ''), true);
+    else announce('Sun raha hoon: ' + (alts[0] || ''), true);
   };
   r.onerror = e => {
     if (done || rec !== r) return;
@@ -724,7 +724,7 @@ function attempt(li, tries, resumeAfter) {
   };
   r.onend = () => { if (rec !== r) return; conclude(); };
   listening = true; micUI(true);
-  announce('بولیں… (' + LANG_NAMES[lang] + ')', true);
+  announce('Bolein… (' + LANG_NAMES[lang] + ')', true);
   recTimer = setTimeout(() => { if (rec !== r) return; try { r.stop(); } catch (x) {} setTimeout(conclude, 1500); }, 9000);
   try { r.start(); } catch (x) { conclude(); }
 }
