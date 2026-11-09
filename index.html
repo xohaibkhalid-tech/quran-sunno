@@ -105,7 +105,7 @@ svg{flex:none}
   <header>
     <h1 tabindex="-1">قرآن سنیں</h1>
     <p class="greet">السلام علیکم</p>
-    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v15</p>
+    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v16</p>
   </header>
 
   <button id="micBtn" type="button" class="hero" aria-label="بولنے کے لیے دبائیں، پھر سورہ کا نام بولیں">
@@ -119,6 +119,7 @@ svg{flex:none}
     <button type="button" id="modeWithout" aria-pressed="false">بغیر ترجمہ<small>صرف تلاوت</small></button>
   </div>
 
+  <button id="contBtn" type="button" class="wide">مسلسل تلاوت: بند</button>
   <button id="resumeBtn" type="button" class="wide"><span>سورہ الفاتحہ سے شروع کریں</span></button>
 
   <h2>جلدی سننے کے لیے</h2>
@@ -149,6 +150,7 @@ svg{flex:none}
     <button id="nextBtn" type="button">اگلی آیت</button>
     <button id="plMic" type="button" aria-label="بولنے کے لیے دبائیں">بولیں</button>
     <button id="transBtn" type="button">ترجمہ: ساتھ</button>
+    <button id="plCont" type="button">مسلسل تلاوت: بند</button>
     <button id="homeBtn" type="button" style="grid-column:1/3">واپس ہوم</button>
   </div>
 </main>
@@ -334,6 +336,12 @@ function blocked(err) {
   announce('چلانے کے لیے بڑا بٹن دبائیں', true);
 }
 
+function CONT() { return lsGet('qs_cont') === '1'; }
+function setCont(v, silent) {
+  lsSet('qs_cont', v ? '1' : '0');
+  ['contBtn', 'plCont'].forEach(id => { const b = $(id); if (b) b.textContent = 'مسلسل تلاوت: ' + (v ? 'چالو' : 'بند'); });
+  if (!silent) announce(v ? 'سورت ختم ہونے پر اگلی سورت خود چلے گی' : 'ایک سورت کے بعد رک جائے گا', true);
+}
 function advance() {
   if (P.phase === 'ar' && TRANS) { P.phase = 'ur'; playCurrent(); return; }
   nextAyah();
@@ -344,6 +352,9 @@ function nextAyah() {
   if (P.a < c.to) { P.a++; playCurrent(); return; }
   if (P.li < P.list.length - 1) { P.li++; P.a = cur().from; playCurrent(); return; }
   /* فہرست ختم */
+  if (CONT() && c.keep && c.to === COUNTS[c.s - 1] && c.s < 114) {
+    P.list.push(full(c.s + 1)); P.li = P.list.length - 1; P.a = 1; playCurrent(); return;
+  }
   P.want = false; refreshPlayer(); tone('done');
   if (c.keep && c.to === COUNTS[c.s - 1]) setLast(c.s < 114 ? c.s + 1 : 1, 1);
   announce('تلاوت مکمل ہوئی', true);
@@ -619,6 +630,11 @@ function parse(text) {
     const n = parseCount(toks);
     if (n) return { cmd: 'setTarget', n: n };
   }
+  /* مسلسل تلاوت */
+  if (toks.indexOf(norm('مسلسل')) >= 0 || toks.indexOf('musalsal') >= 0 || toks.indexOf('continuous') >= 0)
+    return { cmd: (toks.indexOf(norm('بند')) >= 0 || toks.indexOf(norm('ختم')) >= 0) ? 'contOff' : 'contOn' };
+  if ((toks.indexOf(norm('پورا')) >= 0 || toks.indexOf(norm('مکمل')) >= 0) && (toks.indexOf(norm('قرآن')) >= 0 || toks.indexOf(norm('قران')) >= 0))
+    return { cmd: 'fullQuran' };
   /* گنتی کا طریقہ */
   if (toks.indexOf(norm('گنتی')) >= 0 || toks.indexOf('ginti') >= 0) {
     if (toks.indexOf(norm('ہاتھ')) >= 0 || toks.indexOf(norm('دستی')) >= 0 || toks.indexOf('hath') >= 0) return { cmd: 'modeManual' };
@@ -653,6 +669,9 @@ function runCmd(c) {
     case 'nextSurah': if (inPlayer) { jumpSurah(1); return true; } break;
     case 'prevSurah': if (inPlayer) { jumpSurah(-1); return true; } break;
     case 'repeat': if (view === 'zikr') { zikrReset(); return true; } if (inPlayer) { P.phase = 'ar'; playCurrent(); return true; } break;
+    case 'contOn': setCont(true); return true;
+    case 'contOff': setCont(false); return true;
+    case 'fullQuran': setCont(true, true); startList([full(1)], 1); return true;
     case 'modeManual': setZMode('manual'); return true;
     case 'modeAuto': setZMode('auto'); return true;
     case 'home': goHome(); return true;
@@ -1066,6 +1085,7 @@ function build() {
 function wire() {
   $('micBtn').onclick = listen;
   $('plMic').onclick = listen;
+  $('contBtn').onclick = () => setCont(!CONT()); $('plCont').onclick = () => setCont(!CONT()); setCont(CONT(), true);
   $('modeWith').onclick = () => setTrans(true);
   $('modeWithout').onclick = () => setTrans(false);
   $('resumeBtn').onclick = () => { unlock(); resumeLast(); };
