@@ -97,7 +97,7 @@ svg{flex:none}
   <header>
     <h1 tabindex="-1">قرآن سنیں</h1>
     <p class="greet">السلام علیکم</p>
-    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v10</p>
+    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v11</p>
   </header>
 
   <button id="micBtn" type="button" class="hero" aria-label="بولنے کے لیے دبائیں، پھر سورہ کا نام بولیں">
@@ -164,6 +164,7 @@ svg{flex:none}
       <span id="zTapText">دبائیں</span>
       <small>ہر بار ذکر کے بعد ایک بار دبائیں</small>
     </button>
+    <button id="zAuto" type="button" class="wide">خودکار گنتی: بند</button>
     <div class="two">
       <button id="zUndo" type="button">ایک کم</button>
       <button id="zTarget" type="button">ہدف: 33</button>
@@ -276,6 +277,7 @@ const VIEWS = { home: 'home', player: 'player-view', zikr: 'zikr' };
 let view = 'home';
 function show(v) {
   view = v;
+  if (v !== 'zikr') autoStop();
   Object.keys(VIEWS).forEach(k => { $(VIEWS[k]).hidden = (k !== v); });
   window.scrollTo(0, 0);
   const h = $(VIEWS[v]).querySelector('h1');
@@ -645,7 +647,7 @@ function runCmd(c) {
 function act(p) {
   if (p.list) { startList(p.list, p.list[0].from, p.trans); return; }
   if (p.s) { startList([{ s: p.s, from: p.a || 1, to: COUNTS[p.s - 1], keep: true }], p.a || 1, p.trans); return; }
-  if (p.zikr !== undefined) { openZikr(p.zikr, { target: p.n || 0, auto: true }); return; }
+  if (p.zikr !== undefined) { openZikr(p.zikr, { target: p.n || 0, auto: true }); setTimeout(autoStart, 300); return; }
   if (p.cmd === 'setTarget') { setTargetVoice(p.n); return; }
   runCmd(p.cmd);
 }
@@ -685,7 +687,7 @@ function toWav(abuf) {
   return d.buffer;
 }
 async function cloudListen(resumeAfter) {
-  const end = (msg, ok) => { listening = false; micUI(false); if (!ok) tone('bad'); if (msg) announce(msg, true); if (!ok && resumeAfter) resumePlayback(); };
+  const end = (msg, ok) => { listening = false; micUI(false); if (!ok) tone('bad'); if (msg) announce(msg, true); if (!ok && resumeAfter) resumePlayback(); autoMaybe(); };
   let stream;
   try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
   catch (e) { return end('Mic ki ijazat nahi mili. Safari settings mein Microphone Allow karein.'); }
@@ -716,8 +718,8 @@ async function cloudListen(resumeAfter) {
       const j = await r.json(); const text = (j.text || '').trim();
       listening = false; micUI(false);
       const p = text && parse(text);
-      if (p) { tone('ok'); act(p); }
-      else { tone('bad'); announce(text ? 'Samajh nahi aaya. Suna: ' + text : 'Kuch samajh nahi aaya, dobara bolein.', true); if (resumeAfter) resumePlayback(); }
+      if (p) { tone('ok'); act(p); autoMaybe(); }
+      else { tone('bad'); announce(text ? 'Samajh nahi aaya. Suna: ' + text : 'Kuch samajh nahi aaya, dobara bolein.', true); if (resumeAfter) resumePlayback(); autoMaybe(); }
     } catch (e) { end('Internet ya server ka masla: ' + e); }
   };
   mr.start();
@@ -726,6 +728,7 @@ async function cloudListen(resumeAfter) {
 function listen() {
   if (listening) { stopListening(); announce(''); return; }
   if (!SR) { tone('bad'); announce('اس براؤزر میں آواز پہچاننا موجود نہیں۔ نیچے فہرست سے سورہ چنیں۔', true); return; }
+  if (view === 'zikr' && AUTO.on) { AUTO.resume = true; autoStop(); }
   const resumeAfter = view === 'player' && P.want;
   if (resumeAfter) pausePlayback();
   if (WORKER_URL && navigator.mediaDevices) { cloudListen(resumeAfter); return; }
@@ -819,17 +822,96 @@ function updateZ() {
   $('zTarget').setAttribute('aria-label', 'ہدف ' + Z.target + '، بدلنے کے لیے دبائیں');
   $('zTapText').textContent = Z.done ? 'ہدف مکمل' : 'دبائیں';
 }
-function zikrTap() {
+
+/* ---------- خودکار گنتی: والد صرف ذکر بولیں، ایپ آواز کے ٹکڑے گن کر گنتی بڑھائے ---------- */
+let ACX = null;
+const AUTO = { on: false, resume: false, stream: null, iv: 0 };
+function autoLabel() { const b = $('zAuto'); if (b) b.textContent = 'خودکار گنتی: ' + (AUTO.on ? 'چالو' : 'بند'); }
+async function autoStart() {
+  if (AUTO.on || !Z.item || Z.done) return;
+  if (!navigator.mediaDevices) { announce('اس براؤزر میں خودکار گنتی نہیں چلتی۔', true); return; }
+  if (listening) stopListening();
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: true } }); }
+  catch (e) { announce('مائیک کی اجازت نہیں ملی۔', true); return; }
+  if (AUTO.on || Z.done || view !== 'zikr') { stream.getTracks().forEach(t => t.stop()); return; }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!ACX) ACX = new AC();
+  try { await ACX.resume(); } catch (e) {}
+  const an = ACX.createAnalyser(); an.fftSize = 1024;
+  const src = ACX.createMediaStreamSource(stream); src.connect(an);
+  const buf = new Float32Array(an.fftSize);
+  AUTO.on = true; AUTO.stream = stream; AUTO.src = src; AUTO.an = an; autoLabel();
+  const st = { t0: Date.now(), cal: [], thr: 0, lo: 0, inB: false, bs: 0, qs: 0, durs: [], mute: 0, ready: false };
+  AUTO.st = st;
+  announce('ایک لمحہ خاموش رہیں…', true);
+  AUTO.iv = setInterval(() => {
+    an.getFloatTimeDomainData(buf);
+    let sum = 0; for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+    const rms = Math.sqrt(sum / buf.length), t = Date.now();
+    if (!st.ready) {
+      st.cal.push(rms);
+      if (t - st.t0 >= 1100) {
+        st.cal.sort((a, b) => a - b);
+        const floor = st.cal[Math.floor(st.cal.length * 0.9)] || 0.005;
+        st.thr = Math.max(0.02, floor * 3); st.lo = st.thr * 0.55; st.ready = true;
+        tone('ten'); st.mute = Date.now() + 900;
+        announce('شروع کریں، ایپ سن رہی ہے۔ ' + Z.count + ' / ' + Z.target, true);
+      }
+      return;
+    }
+    if (t < st.mute) { st.inB = false; st.qs = 0; return; }
+    const loud = rms > (st.inB ? st.lo : st.thr);
+    if (loud) { if (!st.inB) { st.inB = true; st.bs = t; } st.qs = 0; }
+    else if (st.inB) {
+      if (!st.qs) st.qs = t;
+      if (t - st.qs >= 230) {
+        const dur = st.qs - st.bs; st.inB = false; st.qs = 0;
+        autoBurst(dur, st);
+      }
+    }
+  }, 25);
+}
+function autoBurst(dur, st) {
+  if (dur < 110) return;
+  let n = 1;
+  if (st.durs.length >= 4) {
+    const m = st.durs.slice().sort((a, b) => a - b)[Math.floor(st.durs.length / 2)];
+    if (dur > m * 1.7) n = Math.min(8, Math.max(1, Math.round(dur / m)));
+  }
+  if (n === 1) { st.durs.push(dur); if (st.durs.length > 15) st.durs.shift(); }
+  for (let i = 0; i < n; i++) {
+    if (Z.done) break;
+    zikrTap(true);
+    if (!Z.done) {
+      const step = Z.target >= 300 ? 100 : Z.target >= 100 ? 25 : 10;
+      if (Z.count % step === 0) { tone('ten'); st.mute = Date.now() + 900; }
+    }
+  }
+}
+function autoStop() {
+  if (!AUTO.on) { return; }
+  AUTO.on = false; clearInterval(AUTO.iv);
+  try { AUTO.src && AUTO.src.disconnect(); } catch (e) {}
+  try { AUTO.stream && AUTO.stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+  AUTO.stream = null; autoLabel();
+}
+function autoMaybe() {
+  if (AUTO.resume) { AUTO.resume = false; if (Z.item && !Z.done && view === 'zikr') autoStart(); }
+}
+
+function zikrTap(quiet) {
   if (!Z.item) return;
   if (Z.count >= Z.target) { tone('done'); announce('ہدف مکمل ہو چکا ہے۔ نیا شروع کرنے کے لیے "صفر سے شروع" دبائیں', true); return; }
   Z.count++; addDayTotal(1); saveZ();
   if (Z.count >= Z.target) {
-    Z.done = true; releaseWake(); updateZ();
+    Z.done = true; releaseWake(); updateZ(); autoStop();
     tone('done'); setTimeout(() => tone('done'), 900);
     announce('ماشاءاللہ! آپ کا ہدف ' + Z.target + ' مکمل ہو گیا', true);
     say('آپ کا ہدف مکمل ہو گیا');
     return;
   }
+  if (quiet === true) { updateZ(); return; }
   if (Z.count % 10 === 0) { tone('ten'); announce(Z.count + ' / ' + Z.target); } else tone('tick');
   updateZ();
 }
@@ -878,7 +960,7 @@ function startZikr(it, opts) {
   announce(it.ur + '، ' + Z.count + ' / ' + Z.target);
   setTimeout(() => { try { $('zTap').focus({ preventScroll: true }); } catch (e) {} }, 80);
 }
-function showZPick() { stopZikr(); $('zPick').hidden = false; $('zRun').hidden = true; }
+function showZPick() { autoStop(); stopZikr(); $('zPick').hidden = false; $('zRun').hidden = true; }
 function openZikr(key, opts) {
   opts = opts || {};
   pausePlayback(); stopListening();
@@ -940,6 +1022,7 @@ function wire() {
   $('zikrBtn').onclick = () => openZikr('');
   $('langBtn').onclick = cycleLang;
   document.addEventListener('pointerdown', e => {
+    try { if (!ACX) { const A = window.AudioContext || window.webkitAudioContext; ACX = new A(); } if (ACX.state === 'suspended') ACX.resume(); } catch (x) {}
     const b = e.target && e.target.closest ? e.target.closest('button') : null;
     unlock();
   }, true);
@@ -959,7 +1042,8 @@ function wire() {
   $('zHome').onclick = goHome;
   $('zBack').onclick = showZPick;
   $('zMore').onclick = zikrReset;
-  $('zTap').onclick = zikrTap;
+  $('zTap').onclick = () => zikrTap();
+  $('zAuto').onclick = () => { if (AUTO.on) { autoStop(); announce('خودکار گنتی بند', true); } else autoStart(); };
   $('zUndo').onclick = zikrUndo;
   $('zTarget').onclick = zikrTarget;
   $('zMic').onclick = listen;
@@ -967,7 +1051,7 @@ function wire() {
 
 build(); wire(); setTrans(TRANS, true); refreshResume(); refreshLangBtn(); loadVoices();
 if ('speechSynthesis' in window) { try { speechSynthesis.addEventListener('voiceschanged', loadVoices); } catch (e) {} }
-window.__qs = { parse: parse, norm: norm, COUNTS: COUNTS, NAMES: NAMES, Z: Z, ZIKR: ZIKR, startZikr: startZikr, zikrTap: zikrTap, zikrUndo: zikrUndo, setTargetVoice: setTargetVoice, act: act };
+window.__qs = { autoBurst: autoBurst, parse: parse, norm: norm, COUNTS: COUNTS, NAMES: NAMES, Z: Z, ZIKR: ZIKR, startZikr: startZikr, zikrTap: zikrTap, zikrUndo: zikrUndo, setTargetVoice: setTargetVoice, act: act };
 })();
 </script>
 </body>
