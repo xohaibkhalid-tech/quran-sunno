@@ -105,7 +105,7 @@ svg{flex:none}
   <header>
     <h1 tabindex="-1">قرآن سنیں</h1>
     <p class="greet">السلام علیکم</p>
-    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v14</p>
+    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v15</p>
   </header>
 
   <button id="micBtn" type="button" class="hero" aria-label="بولنے کے لیے دبائیں، پھر سورہ کا نام بولیں">
@@ -176,6 +176,7 @@ svg{flex:none}
     </button>
     <button id="zMoreBtn" type="button" aria-label="مزید بٹن">⋯ مزید</button>
     <div id="zTools" hidden>
+      <button id="zMode" type="button">گنتی: ہاتھ سے</button>
       <button id="zAuto" type="button">خودکار گنتی: بند</button>
       <button id="zMic2" type="button">بولیں</button>
       <button id="zUndo" type="button">ایک کم</button>
@@ -618,6 +619,11 @@ function parse(text) {
     const n = parseCount(toks);
     if (n) return { cmd: 'setTarget', n: n };
   }
+  /* گنتی کا طریقہ */
+  if (toks.indexOf(norm('گنتی')) >= 0 || toks.indexOf('ginti') >= 0) {
+    if (toks.indexOf(norm('ہاتھ')) >= 0 || toks.indexOf(norm('دستی')) >= 0 || toks.indexOf('hath') >= 0) return { cmd: 'modeManual' };
+    if (toks.indexOf(norm('آواز')) >= 0 || toks.indexOf(norm('خودکار')) >= 0 || toks.indexOf('awaz') >= 0) return { cmd: 'modeAuto' };
+  }
   /* اگلی/پچھلی */
   if (anyTok(toks, CMD.next)) return { cmd: hasSurahWord ? 'nextSurah' : 'next' };
   if (anyTok(toks, CMD.prev)) return { cmd: hasSurahWord ? 'prevSurah' : 'prev' };
@@ -647,6 +653,8 @@ function runCmd(c) {
     case 'nextSurah': if (inPlayer) { jumpSurah(1); return true; } break;
     case 'prevSurah': if (inPlayer) { jumpSurah(-1); return true; } break;
     case 'repeat': if (view === 'zikr') { zikrReset(); return true; } if (inPlayer) { P.phase = 'ar'; playCurrent(); return true; } break;
+    case 'modeManual': setZMode('manual'); return true;
+    case 'modeAuto': setZMode('auto'); return true;
     case 'home': goHome(); return true;
     case 'transOn': setTrans(true); return true;
     case 'transOff': setTrans(false); return true;
@@ -659,7 +667,7 @@ function runCmd(c) {
 function act(p) {
   if (p.list) { startList(p.list, p.list[0].from, p.trans); return; }
   if (p.s) { startList([{ s: p.s, from: p.a || 1, to: COUNTS[p.s - 1], keep: true }], p.a || 1, p.trans); return; }
-  if (p.zikr !== undefined) { openZikr(p.zikr, { target: p.n || 0, auto: true }); setTimeout(autoStart, 300); return; }
+  if (p.zikr !== undefined) { openZikr(p.zikr, { target: p.n || 0, auto: true }); if (zMode() === 'auto') setTimeout(autoStart, 300); return; }
   if (p.cmd === 'setTarget') { setTargetVoice(p.n); return; }
   runCmd(p.cmd);
 }
@@ -857,8 +865,16 @@ async function playClip(name) {
   } catch (e) { return 0; }
 }
 const AUTO = { on: false, resume: false, stream: null, iv: 0 };
+function zMode() { return lsGet('qs_zmode') === 'auto' ? 'auto' : 'manual'; }
+function setZMode(m) {
+  lsSet('qs_zmode', m);
+  if (m === 'manual') autoStop();
+  const b = $('zMode'); if (b) b.textContent = 'گنتی: ' + (m === 'auto' ? 'آواز سے' : 'ہاتھ سے');
+  tapLabel();
+  announce(m === 'auto' ? 'اب آواز سے گنتی ہو گی۔ شروع کرنے کے لیے دبائیں' : 'اب ہاتھ سے گنتی ہو گی۔ ہر ذکر کے بعد ایک بار دبائیں', true);
+}
 function autoLabel() { const b = $('zAuto'); if (b) b.textContent = 'خودکار گنتی: ' + (AUTO.on ? 'چالو' : 'بند'); tapLabel(); }
-function tapLabel() { const t = $('zTapText'); if (t) t.textContent = Z.done ? 'ہدف مکمل' : (AUTO.on ? 'سن رہا ہوں، روکنے کے لیے دبائیں' : 'شروع کرنے کے لیے دبائیں'); }
+function tapLabel() { const t = $('zTapText'); if (t) t.textContent = Z.done ? 'ہدف مکمل' : (zMode() === 'manual' ? 'ہر ذکر کے بعد ایک بار دبائیں' : (AUTO.on ? 'سن رہا ہوں، روکنے کے لیے دبائیں' : 'شروع کرنے کے لیے دبائیں')); }
 async function autoStart() {
   if (AUTO.on || !Z.item || Z.done) return;
   if (!navigator.mediaDevices) { announce('اس براؤزر میں خودکار گنتی نہیں چلتی۔', true); return; }
@@ -1083,8 +1099,10 @@ function wire() {
     zt.addEventListener('contextmenu',e=>e.preventDefault());
     zt.onclick=()=>{ if(long){long=false;return;} if(listening){stopListening();return;}
       if(Z.done){ tone('done'); announce('ہدف مکمل ہو چکا ہے۔ نیا شروع کرنے کے لیے "مزید" میں "صفر سے شروع" دبائیں', true); return; }
+      if(zMode()==='manual'){ zikrTap(); return; }
       if(AUTO.on){ autoStop(); announce('گنتی رکی ہوئی ہے۔ ' + Z.count + ' / ' + Z.target, true); } else autoStart(); };
     $('zMoreBtn').onclick=()=>{ const t=$('zTools'); t.hidden=!t.hidden; };
+    $('zMode').onclick=()=>setZMode(zMode()==='auto'?'manual':'auto'); $('zMode').textContent='گنتی: '+(zMode()==='auto'?'آواز سے':'ہاتھ سے');
     $('zMic2').onclick=listen; $('zHome2').onclick=goHome;
     $('zTapManual').onclick=()=>zikrTap();
   })();
