@@ -89,6 +89,7 @@ svg{flex:none}
   <header>
     <h1 tabindex="-1">قرآن سنیں</h1>
     <p class="greet">السلام علیکم</p>
+    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v4</p>
   </header>
 
   <button id="micBtn" type="button" class="hero" aria-label="بولنے کے لیے دبائیں، پھر سورہ کا نام بولیں">
@@ -676,12 +677,14 @@ function listen() {
 function attempt(li, tries, resumeAfter) {
   const lang = LANGS[li % LANGS.length];
   let alts = [], done = false;
+  const evs = [];
   const r = new SR();
   rec = r;
+  ['start', 'audiostart', 'soundstart', 'speechstart', 'speechend', 'soundend', 'audioend'].forEach(n => { r['on' + n] = () => evs.push(n); });
   const fail = msg => {
     if (done || rec !== r) return;
     done = true; clearTimeout(recTimer); listening = false; micUI(false);
-    tone('bad'); announce(msg, true);
+    tone('bad'); announce(msg + ' [' + evs.join(' > ') + ']', true);
     if (resumeAfter) resumePlayback();
   };
   const conclude = () => {
@@ -692,7 +695,7 @@ function attempt(li, tries, resumeAfter) {
     if (alts.length) lsSet('qs_lang', lang);
     if (pick) { tone('ok'); act(pick); return; }
     tone('bad');
-    announce(alts.length ? ('سمجھ نہیں آیا۔ فون نے سنا: ' + alts[0]) : 'کچھ سنائی نہیں دیا، دوبارہ دبائیں', true);
+    announce(alts.length ? ('سمجھ نہیں آیا۔ فون نے سنا: ' + alts[0]) : 'کچھ سنائی نہیں دیا، دوبارہ دبائیں [' + evs.join(' > ') + ']', true);
     if (resumeAfter) resumePlayback();
   };
   r.lang = lang; r.interimResults = true; r.maxAlternatives = 5; r.continuous = false;
@@ -706,6 +709,7 @@ function attempt(li, tries, resumeAfter) {
   r.onerror = e => {
     if (done || rec !== r) return;
     const er = e && e.error;
+    evs.push('err:' + er);
     if (er === 'aborted') return;
     if (tries < LANGS.length - 1 && (er === 'language-not-supported' || er === 'service-not-allowed' || er === 'not-allowed')) {
       done = true; clearTimeout(recTimer);
