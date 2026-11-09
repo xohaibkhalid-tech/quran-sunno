@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="قرآن سنیں">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0e1a24">
+<title>قرآن سنیں</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0e1a24; --panel:#172636; --panel2:#20364a; --line:#33506b;
+  --fg:#f3f6f9; --muted:#a9bccd; --accent:#f2b73c; --accent-fg:#1d1503;
+  --ok:#63d6a8; --bad:#ff9d94;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{background:var(--bg)}
+body{
+  margin:0;background:var(--bg);color:var(--fg);
+  font-family:'Noto Naskh Arabic','Geeza Pro','Arial',sans-serif;
+  font-size:20px;line-height:1.7;-webkit-text-size-adjust:100%;
+  padding-block:max(16px,env(safe-area-inset-top)) max(28px,env(safe-area-inset-bottom));
+  padding-left:max(16px,env(safe-area-inset-left));
+  padding-right:max(16px,env(safe-area-inset-right));
+}
+.view{display:flex;flex-direction:column;gap:16px;max-width:560px;margin:0 auto}
+h1{font-size:1.9rem;line-height:1.5;margin:0;text-align:center}
+h1:focus{outline:none}
+h2{font-size:1.15rem;margin:10px 0 0;color:var(--muted);font-weight:500}
+p{margin:0}
+.greet{text-align:center;color:var(--muted)}
+.status{
+  max-width:560px;margin:0 auto 12px;min-height:2.6em;padding:8px 14px;border-radius:16px;
+  background:var(--panel);color:var(--muted);text-align:center;font-size:1rem;line-height:1.7;
+}
+button{
+  font:inherit;font-weight:700;color:var(--fg);background:var(--panel2);
+  border:2px solid var(--line);border-radius:26px;padding:14px 18px;min-height:76px;width:100%;
+  cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+  display:flex;align-items:center;justify-content:center;gap:14px;text-align:center;
+  user-select:none;-webkit-user-select:none;
+}
+button:active{transform:scale(.98)}
+button:focus-visible{outline:5px solid #fff;outline-offset:3px}
+.hero{
+  min-height:260px;min-height:min(34svh,320px);flex-direction:column;gap:6px;
+  background:var(--accent);color:var(--accent-fg);border-color:transparent;font-size:2.2rem;
+}
+.hero small{font-size:1.1rem;font-weight:500;opacity:.85}
+.hero.tall{min-height:300px;min-height:min(46svh,440px)}
+.hero.on{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 14px rgba(242,183,60,.35)}}
+@media (prefers-reduced-motion:reduce){.hero.on{animation:none;outline:6px solid #fff}}
+.wide{font-size:1.25rem}
+.mode{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mode button{min-height:84px;font-size:1.3rem;flex-direction:column;gap:0}
+.mode button small{font-weight:500;font-size:.95rem;color:var(--muted)}
+.mode button[aria-pressed="true"]{background:var(--ok);color:#06241a;border-color:transparent}
+.mode button[aria-pressed="true"] small{color:#0b3a2a}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid button{min-height:84px;font-size:1.2rem}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.two button{min-height:110px;font-size:1.35rem}
+.list{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.list button{min-height:64px;font-size:1.05rem;font-weight:500;padding:8px 10px}
+.list.one{grid-template-columns:1fr}
+.list.one button{min-height:78px;font-size:1.3rem;justify-content:space-between}
+.list.one button small{font-weight:500;color:var(--muted);font-size:1rem}
+.arabic{font-size:2.3rem;text-align:center;line-height:2.1;margin:0}
+.zname{text-align:center;color:var(--muted)}
+.count{font-size:4rem;text-align:center;line-height:1.2;font-variant-numeric:tabular-nums}
+svg{flex:none}
+</style>
+</head>
+<body>
+
+<p id="status" class="status" role="status" aria-live="polite">&nbsp;</p>
+<audio id="player" preload="auto"></audio>
+
+<!-- ============ HOME ============ -->
+<main id="home" class="view">
+  <header>
+    <h1 tabindex="-1">قرآن سنیں</h1>
+    <p class="greet">السلام علیکم</p>
+  </header>
+
+  <button id="micBtn" type="button" class="hero" aria-label="بولنے کے لیے دبائیں، پھر سورہ کا نام بولیں">
+    <svg width="76" height="76" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg>
+    <span>بولیں</span>
+    <small>سورہ کا نام بولیں</small>
+  </button>
+
+  <div class="mode" role="group" aria-label="ترجمہ کا انتخاب">
+    <button type="button" id="modeWith" aria-pressed="true">ترجمے کے ساتھ<small>تلاوت، پھر اردو ترجمہ</small></button>
+    <button type="button" id="modeWithout" aria-pressed="false">بغیر ترجمہ<small>صرف تلاوت</small></button>
+  </div>
+
+  <button id="resumeBtn" type="button" class="wide"><span>سورہ الفاتحہ سے شروع کریں</span></button>
+
+  <h2>جلدی سننے کے لیے</h2>
+  <div id="quick" class="grid"></div>
+
+  <button id="zikrBtn" type="button" class="wide">ذکر اور درود</button>
+
+  <h2>تمام سورتیں</h2>
+  <div id="allSurahs" class="list"></div>
+</main>
+
+<!-- ============ PLAYER ============ -->
+<main id="player-view" class="view" hidden>
+  <header>
+    <h1 id="plTitle" tabindex="-1">سورہ</h1>
+    <p id="plSub" class="greet">&nbsp;</p>
+  </header>
+
+  <button id="playPause" type="button" class="hero" aria-label="روکیں">
+    <span id="ppIcon"></span>
+    <span id="ppText">روکیں</span>
+  </button>
+
+  <div class="two">
+    <button id="prevBtn" type="button">پچھلی آیت</button>
+    <button id="nextBtn" type="button">اگلی آیت</button>
+  </div>
+
+  <div class="two">
+    <button id="plMic" type="button" aria-label="بولنے کے لیے دبائیں">بولیں</button>
+    <button id="transBtn" type="button">ترجمہ: ساتھ</button>
+  </div>
+
+  <button id="homeBtn" type="button" class="wide">واپس ہوم</button>
+</main>
+
+<!-- ============ ZIKR ============ -->
+<main id="zikr" class="view" hidden>
+  <header>
+    <h1 tabindex="-1">ذکر اور درود</h1>
+  </header>
+
+  <button id="zMic" type="button" class="wide" aria-label="بولنے کے لیے دبائیں، مثلاً: سبحان اللہ سو بار">بولیں: ذکر اور ہدف</button>
+
+  <section id="zPick" class="list one" aria-label="ذکر چنیں"></section>
+
+  <section id="zRun" class="view" hidden>
+    <p id="zName" class="zname">&nbsp;</p>
+    <p id="zText" class="arabic" lang="ar" dir="rtl">&nbsp;</p>
+    <p id="zCount" class="count" aria-live="off">0 / 33</p>
+    <p id="zTotal" class="zname">&nbsp;</p>
+    <button id="zTap" type="button" class="hero tall" aria-label="گنتی بڑھانے کے لیے دبائیں">
+      <span id="zTapText">دبائیں</span>
+      <small>ہر بار ذکر کے بعد ایک بار دبائیں</small>
+    </button>
+    <div class="two">
+      <button id="zUndo" type="button">ایک کم</button>
+      <button id="zTarget" type="button">ہدف: 33</button>
+    </div>
+    <div class="two">
+      <button id="zMore" type="button">صفر سے شروع</button>
+      <button id="zBack" type="button">دوسرا ذکر</button>
+    </div>
+  </section>
+
+  <button id="zHome" type="button" class="wide">واپس ہوم</button>
+</main>
+
+<script>
+(function () {
+'use strict';
+
+/* ---------- ڈیٹا: ہر سورہ کی آیات اور اردو نام ---------- */
+const COUNTS = [7,286,200,176,120,165,206,75,129,109,123,111,43,52,99,128,111,110,98,135,112,78,118,64,77,227,93,88,69,60,34,30,73,54,45,83,182,88,75,85,54,53,89,59,37,35,38,29,18,45,60,49,62,55,78,96,29,22,24,13,14,11,11,18,12,12,30,52,52,44,28,28,20,56,40,31,50,40,46,42,29,19,36,25,22,17,19,26,30,20,15,21,11,8,8,19,5,8,8,11,11,8,3,9,5,4,7,3,6,3,5,4,5,6];
+const NAMES = ['الفاتحہ','البقرہ','آل عمران','النساء','المائدہ','الانعام','الاعراف','الانفال','التوبہ','یونس','ہود','یوسف','الرعد','ابراہیم','الحجر','النحل','بنی اسرائیل','الکہف','مریم','طٰہٰ','الانبیاء','الحج','المؤمنون','النور','الفرقان','الشعراء','النمل','القصص','العنکبوت','الروم','لقمان','السجدہ','الاحزاب','سبا','فاطر','یٰسین','الصافات','ص','الزمر','غافر','فصلت','الشوریٰ','الزخرف','الدخان','الجاثیہ','الاحقاف','محمد','الفتح','الحجرات','ق','الذاریات','الطور','النجم','القمر','الرحمٰن','الواقعہ','الحدید','المجادلہ','الحشر','الممتحنہ','الصف','الجمعہ','المنافقون','التغابن','الطلاق','التحریم','الملک','القلم','الحاقہ','المعارج','نوح','الجن','المزمل','المدثر','القیامہ','الانسان','المرسلات','النبا','النازعات','عبس','التکویر','الانفطار','المطففین','الانشقاق','البروج','الطارق','الاعلیٰ','الغاشیہ','الفجر','البلد','الشمس','اللیل','الضحیٰ','الم نشرح','التین','العلق','القدر','البینہ','الزلزال','العادیات','القارعہ','التکاثر','العصر','الھمزہ','الفیل','قریش','الماعون','الکوثر','الکافرون','النصر','اللہب','الاخلاص','الفلق','الناس'];
+
+/* آڈیو کے ذرائع (EveryAyah): تلاوت مشاری العفاسی، ترجمہ اردو شمشاد علی خان */
+const AR = 'https://everyayah.com/data/Alafasy_128kbps/';
+const UR = 'https://everyayah.com/data/translations/urdu_shamshad_ali_khan_46kbps/';
+const pad = n => String(n).padStart(3, '0');
+const full = (s, from) => ({ s: s, from: from || 1, to: COUNTS[s - 1], keep: true });
+
+const QUICK = [
+  { t: 'سورہ یٰسین',   make: () => [full(36)] },
+  { t: 'سورہ الرحمٰن', make: () => [full(55)] },
+  { t: 'سورہ الملک',   make: () => [full(67)] },
+  { t: 'سورہ الواقعہ', make: () => [full(56)] },
+  { t: 'سورہ الکہف',   make: () => [full(18)] },
+  { t: 'سورہ البقرہ',  make: () => [full(2)] },
+  { t: 'آیت الکرسی',   make: () => [{ s: 2, from: 255, to: 255, keep: false, label: 'آیت الکرسی' }] },
+  { t: 'تینوں قل',     make: () => [full(112), full(113), full(114)] }
+];
+
+const ZIKR = [
+  { k: 'sub',       ur: 'سبحان اللہ',        ar: 'سُبْحَانَ اللّٰهِ', n: 33 },
+  { k: 'alhamd',    ur: 'الحمد للہ',         ar: 'اَلْحَمْدُ لِلّٰهِ', n: 33 },
+  { k: 'akbar',     ur: 'اللہ اکبر',         ar: 'اَللّٰهُ اَكْبَرُ', n: 34 },
+  { k: 'tahlil',    ur: 'لا الٰہ الا اللہ',   ar: 'لَا اِلٰهَ اِلَّا اللّٰهُ', n: 100 },
+  { k: 'istighfar', ur: 'استغفار',           ar: 'اَسْتَغْفِرُ اللّٰهَ', n: 100 },
+  { k: 'durood',    ur: 'درود شریف',         ar: 'صَلَّى اللّٰهُ عَلَيْهِ وَسَلَّمَ', n: 100 },
+  { k: 'tasbih',    ur: 'سبحان اللہ وبحمدہ', ar: 'سُبْحَانَ اللّٰهِ وَبِحَمْدِهِ سُبْحَانَ اللّٰهِ الْعَظِيمِ', n: 100 }
+];
+
+/* ---------- چھوٹے مددگار ---------- */
+const $ = id => document.getElementById(id);
+const player = $('player');
+const statusEl = $('status');
+let statusTimer = 0;
+function announce(msg, keep) {
+  statusEl.textContent = msg || ' ';
+  clearTimeout(statusTimer);
+  if (msg && !keep) statusTimer = setTimeout(() => { statusEl.textContent = ' '; }, 9000);
+}
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function getLast() {
+  try {
+    const o = JSON.parse(lsGet('qs_last') || 'null');
+    if (o && o.s >= 1 && o.s <= 114 && o.a >= 1 && o.a <= COUNTS[o.s - 1]) return o;
+  } catch (e) {}
+  return null;
+}
+function setLast(s, a) { lsSet('qs_last', JSON.stringify({ s: s, a: a })); }
+let TRANS = lsGet('qs_trans') !== '0';
+
+/* ---------- آوازیں (بیپ) — WAV خود بنتی ہے، سائلنٹ سوئچ کا اثر نہیں ---------- */
+function wavURL(notes) {
+  const sr = 22050;
+  let total = 0;
+  notes.forEach(n => { total += Math.floor(n[1] * sr); });
+  const buf = new ArrayBuffer(44 + total * 2), dv = new DataView(buf);
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); dv.setUint32(4, 36 + total * 2, true); w(8, 'WAVE'); w(12, 'fmt ');
+  dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+  dv.setUint32(24, sr, true); dv.setUint32(28, sr * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true);
+  w(36, 'data'); dv.setUint32(40, total * 2, true);
+  let p = 44;
+  notes.forEach(n => {
+    const c = Math.floor(n[1] * sr);
+    for (let i = 0; i < c; i++) {
+      const env = Math.min(1, i / (sr * 0.01), (c - i) / (sr * 0.03));
+      const v = n[0] ? Math.sin(2 * Math.PI * n[0] * (i / sr)) * 0.35 * env : 0;
+      dv.setInt16(p, v * 32767, true); p += 2;
+    }
+  });
+  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+}
+const TONES = {
+  listen: [[660, .12], [880, .18]],
+  ok: [[880, .09], [0, .06], [880, .09]],
+  bad: [[220, .4]],
+  done: [[523, .15], [659, .15], [784, .3]],
+  tick: [[700, .05]],
+  ten: [[880, .08], [0, .04], [1100, .14]],
+  silent: [[0, .08]]
+};
+const toneURL = {};
+function toneSrc(name) { if (!toneURL[name]) toneURL[name] = wavURL(TONES[name]); return toneURL[name]; }
+function tone(name) {
+  try { const a = new Audio(toneSrc(name)); const p = a.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+}
+
+/* ---------- نیویگیشن ---------- */
+const VIEWS = { home: 'home', player: 'player-view', zikr: 'zikr' };
+let view = 'home';
+function show(v) {
+  view = v;
+  Object.keys(VIEWS).forEach(k => { $(VIEWS[k]).hidden = (k !== v); });
+  window.scrollTo(0, 0);
+  const h = $(VIEWS[v]).querySelector('h1');
+  if (h) setTimeout(() => { try { h.focus({ preventScroll: true }); } catch (e) {} }, 60);
+}
+
+/* ---------- پلیئر ---------- */
+const P = { list: [], li: 0, a: 1, phase: 'ar', want: false, loaded: false, errs: 0 };
+const cur = () => P.list[P.li];
+
+/* آئی فون پر آڈیو کو آواز کے حکم کے بعد بھی چلنے دینے کے لیے پہلے ایک بار ٹچ پر "کھول" دیتے ہیں */
+let unlocked = false;
+function unlock() {
+  if (unlocked || P.loaded) return;
+  unlocked = true;
+  try { player.src = toneSrc('silent'); const p = player.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+}
+
+function srcNow() { const c = cur(); return (P.phase === 'ar' ? AR : UR) + pad(c.s) + pad(P.a) + '.mp3'; }
+
+function startList(list, from, trans) {
+  P.list = list; P.li = 0; P.a = from || list[0].from; P.phase = 'ar'; P.errs = 0;
+  if (typeof trans === 'boolean') setTrans(trans, true);
+  show('player');
+  playCurrent();
+}
+
+function playCurrent() {
+  P.loaded = true; P.want = true;
+  player.src = srcNow();
+  if (cur().keep) setLast(cur().s, P.a);
+  refreshPlayer();
+  const pr = player.play();
+  if (pr && pr.catch) pr.catch(blocked);
+  mediaInfo();
+}
+
+function blocked(err) {
+  if (err && err.name === 'AbortError') return;
+  P.want = false; refreshPlayer();
+  announce('چلانے کے لیے بڑا بٹن دبائیں', true);
+}
+
+function advance() {
+  if (P.phase === 'ar' && TRANS) { P.phase = 'ur'; playCurrent(); return; }
+  nextAyah();
+}
+
+function nextAyah() {
+  const c = cur(); P.phase = 'ar';
+  if (P.a < c.to) { P.a++; playCurrent(); return; }
+  if (P.li < P.list.length - 1) { P.li++; P.a = cur().from; playCurrent(); return; }
+  /* فہرست ختم */
+  P.want = false; refreshPlayer(); tone('done');
+  if (c.keep && c.to === COUNTS[c.s - 1]) setLast(c.s < 114 ? c.s + 1 : 1, 1);
+  announce('تلاوت مکمل ہوئی', true);
+}
+
+function prevAyah() {
+  const c = cur();
+  if (P.phase === 'ur' || player.currentTime > 3) { P.phase = 'ar'; playCurrent(); return; }
+  P.phase = 'ar';
+  if (P.a > c.from) P.a--; else if (P.li > 0) { P.li--; P.a = cur().to; }
+  playCurrent();
+}
+
+function jumpSurah(d) {
+  if (!P.list.length) return;
+  let s = cur().s + d;
+  if (s < 1) s = 114; if (s > 114) s = 1;
+  startList([full(s)], 1);
+}
+
+function pausePlayback() { P.want = false; try { player.pause(); } catch (e) {} refreshPlayer(); }
+function resumePlayback() {
+  if (!P.list.length) return;
+  P.want = true; refreshPlayer();
+  if (player.ended || !P.loaded || player.error) playCurrent();
+  else { const pr = player.play(); if (pr && pr.catch) pr.catch(blocked); }
+}
+
+const ICON_PLAY = '<svg width="84" height="84" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>';
+const ICON_PAUSE = '<svg width="84" height="84" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><rect x="6" y="4.5" width="4.2" height="15" rx="1.2"/><rect x="13.8" y="4.5" width="4.2" height="15" rx="1.2"/></svg>';
+
+let lastPP = null;
+function refreshPlayer() {
+  if (!P.list.length) return;
+  const c = cur();
+  $('plTitle').textContent = c.label || ('سورہ ' + NAMES[c.s - 1]);
+  const n = COUNTS[c.s - 1];
+  $('plSub').textContent = (c.label ? 'سورہ ' + NAMES[c.s - 1] + '، ' : '') + 'آیت ' + P.a + ' / ' + n + (P.phase === 'ur' ? ' — ترجمہ' : '');
+  if (lastPP !== P.want) {
+    lastPP = P.want;
+    $('ppIcon').innerHTML = P.want ? ICON_PAUSE : ICON_PLAY;
+    $('ppText').textContent = P.want ? 'روکیں' : 'چلائیں';
+    $('playPause').setAttribute('aria-label', P.want ? 'روکیں' : 'چلائیں');
+  }
+  $('transBtn').textContent = TRANS ? 'ترجمہ: ساتھ' : 'ترجمہ: بند';
+  $('transBtn').setAttribute('aria-label', TRANS ? 'ترجمہ ساتھ چل رہا ہے، بند کرنے کے لیے دبائیں' : 'ترجمہ بند ہے، ساتھ چلانے کے لیے دبائیں');
+}
+
+function setTrans(v, silent) {
+  TRANS = !!v; lsSet('qs_trans', TRANS ? '1' : '0');
+  $('modeWith').setAttribute('aria-pressed', TRANS ? 'true' : 'false');
+  $('modeWithout').setAttribute('aria-pressed', TRANS ? 'false' : 'true');
+  refreshPlayer();
+  if (!silent) announce(TRANS ? 'ترجمہ ساتھ چلے گا' : 'صرف تلاوت چلے گی');
+}
+
+function mediaInfo() {
+  if (!('mediaSession' in navigator) || typeof MediaMetadata === 'undefined' || !P.list.length) return;
+  try {
+    const c = cur();
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: c.label || ('سورہ ' + NAMES[c.s - 1]),
+      artist: 'آیت ' + P.a,
+      album: 'قرآن سنیں'
+    });
+  } catch (e) {}
+}
+(function mediaHandlers() {
+  if (!('mediaSession' in navigator)) return;
+  const set = (n, f) => { try { navigator.mediaSession.setActionHandler(n, f); } catch (e) {} };
+  set('play', () => resumePlayback());
+  set('pause', () => pausePlayback());
+  set('nexttrack', () => nextAyah());
+  set('previoustrack', () => prevAyah());
+})();
+
+player.addEventListener('ended', () => { if (!P.loaded || !P.want) return; advance(); });
+player.addEventListener('playing', () => { P.errs = 0; });
+player.addEventListener('pause', () => {
+  if (!P.loaded || player.ended || !P.want) return;
+  P.want = false; refreshPlayer(); /* فون کال وغیرہ سے رکا */
+});
+player.addEventListener('error', () => {
+  if (!P.loaded || !P.want) return;
+  if (P.errs < 3) {
+    P.errs++;
+    setTimeout(() => { if (P.want) { try { player.load(); const p = player.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {} } }, 2000);
+  } else {
+    P.want = false; refreshPlayer(); tone('bad');
+    announce('آواز نہیں مل رہی۔ انٹرنیٹ چیک کریں', true);
+  }
+});
+
+/* ---------- آواز سے حکم سمجھنا ---------- */
+function norm(s) {
+  return String(s || '').toLowerCase()
+    .replace(/[ً-ٰٟۖ-ۭـ‌-‏]/g, '')
+    .replace(/[آأإٱ]/g, 'ا')
+    .replace(/[ۃۂۀةهھ]/g, 'ہ')
+    .replace(/[كک]/g, 'ک')
+    .replace(/[يىیےۓئ]/g, 'ی')
+    .replace(/ں/g, 'ن')
+    .replace(/ؤ/g, 'و')
+    .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 0x06F0))
+    .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[^؀-ۿa-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+function lev(a, b) {
+  if (a === b) return 0;
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  let prev = new Array(n + 1), curr = new Array(n + 1);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= n; j++) {
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    const t = prev; prev = curr; curr = t;
+  }
+  return prev[n];
+}
+
+const ALIAS_RAW = {
+  1: ['فاتحہ', 'حمد', 'fatiha', 'fatihah'],
+  2: ['بقرہ', 'baqarah', 'baqara', 'bakra'],
+  3: ['عمران', 'imran', 'ali imran', 'aal imran'],
+  17: ['اسرا', 'اسراء', 'isra', 'bani israel'],
+  18: ['کہف', 'kahf', 'kahaf'],
+  19: ['مریم', 'maryam', 'mariam'],
+  32: ['سجدہ', 'sajdah', 'sajda'],
+  36: ['یاسین', 'یس', 'یسین', 'yasin', 'yaseen', 'yaaseen'],
+  40: ['مومن', 'momin'],
+  41: ['حم سجدہ'],
+  55: ['رحمان', 'رحمن', 'rahman', 'rehman'],
+  56: ['واقعہ', 'waqia', 'waqiah', 'waqiya'],
+  67: ['ملک', 'تبارک', 'mulk', 'mulq', 'tabarak'],
+  71: ['nuh'],
+  73: ['مزمل', 'muzammil'],
+  76: ['دہر', 'insan'],
+  78: ['naba', 'nabaa'],
+  87: ['اعلی', 'ala', 'aala'],
+  93: ['ضحی', 'duha', 'zuha'],
+  94: ['شرح', 'انشراح', 'sharh', 'inshirah', 'alam nashrah'],
+  97: ['qadr'],
+  99: ['زلزلہ', 'zilzal', 'zalzala'],
+  103: ['asr', 'asar'],
+  105: ['fil', 'feel'],
+  108: ['kausar', 'kawthar', 'kauthar'],
+  109: ['کافرون', 'kafirun', 'kafiroon'],
+  110: ['nasr'],
+  111: ['تبت', 'مسد', 'lahab', 'masad'],
+  112: ['اخلاص', 'ikhlas', 'ikhlaas'],
+  113: ['falaq', 'falak'],
+  114: ['nas', 'naas']
+};
+const nospace = s => norm(s).replace(/ /g, '');
+const NN = NAMES.map(n => {
+  const f = nospace(n);
+  return { full: f, core: (f.indexOf('ال') === 0 && f.length > 4) ? f.slice(2) : f };
+});
+const AL = {};
+Object.keys(ALIAS_RAW).forEach(k => { AL[k] = ALIAS_RAW[k].map(nospace); });
+
+const mk = arr => arr.map(norm);
+const FILL = new Set(mk(['سورہ', 'سورت', 'سورة', 'سنائیں', 'سناو', 'سنا', 'سنو', 'چلاو', 'چلائیں', 'چلا', 'کھولو', 'لگاو', 'لگائیں', 'لگا', 'پڑھو', 'پڑھیں', 'نمبر', 'کی', 'کا', 'کے', 'دو', 'کریں', 'کر', 'مجھے', 'ہمیں', 'قرآن', 'پاک', 'شریف', 'مہربانی', 'پلیز', 'اور', 'ترجمہ', 'ترجمے', 'ساتھ', 'بغیر', 'آیت', 'surah', 'sura', 'surat', 'sunao', 'suna', 'chalao', 'lagao', 'number', 'no', 'please', 'with', 'without', 'translation', 'tarjuma', 'ayat', 'ayah', 'ہے', 'ہی', 'ہوں', 'ہیں', 'چاہتا', 'چاہتی', 'چاہیے', 'کرنا', 'کرنی', 'کرنے', 'سنانی', 'سنانا', 'سنانے', 'سنی', 'سننی', 'سننا', 'لگانی', 'لگانا', 'یہ', 'وہ', 'کو', 'میں', 'سے', 'پر', 'بار', 'مرتبہ', 'ہدف', 'ٹارگٹ', 'target']));
+const CMD = {
+  pause: mk(['رک', 'رکو', 'رکیں', 'روک', 'روکو', 'روکیں', 'بند', 'خاموش', 'ٹھہرو', 'ٹھہریں', 'وقفہ', 'pause', 'stop', 'ruk', 'ruko', 'roko']),
+  play: mk(['چلاو', 'چلائیں', 'چلا', 'شروع', 'جاری', 'پلے', 'سنو', 'سناو', 'سنائیں', 'play', 'continue', 'resume', 'chalao', 'shuru', 'jari']),
+  next: mk(['اگلی', 'اگلا', 'اگلے', 'آگے', 'next', 'agli', 'agla', 'aage']),
+  prev: mk(['پچھلی', 'پچھلا', 'پچھلے', 'پیچھے', 'previous', 'back', 'pichli', 'pichla', 'peeche', 'piche']),
+  repeat: mk(['دوبارہ', 'دہرائیں', 'دہراو', 'repeat', 'dobara', 'dubara']),
+  home: mk(['ہوم', 'گھر', 'واپس', 'مینو', 'home', 'menu', 'ghar', 'wapas'])
+};
+const anyTok = (toks, list) => toks.some(t => list.indexOf(t) >= 0);
+
+const NUMW = {};
+[['ایک',1],['دو',2],['تین',3],['چار',4],['پانچ',5],['چھ',6],['سات',7],['آٹھ',8],['نو',9],['دس',10],['گیارہ',11],['بارہ',12],['تیرہ',13],['چودہ',14],['پندرہ',15],['سولہ',16],['سترہ',17],['اٹھارہ',18],['انیس',19],['بیس',20],['پچیس',25],['تیس',30],['تینتیس',33],['چونتیس',34],['پینتیس',35],['چالیس',40],['پچاس',50],['ساٹھ',60],['ستر',70],['اسی',80],['نوے',90],['سو',100],['ہزار',1000]].forEach(p => { NUMW[norm(p[0])] = p[1]; });
+/* "تین سو تیرہ" یا "100" جیسی گنتی کو عدد میں بدلتا ہے */
+function parseCount(toks) {
+  let total = 0, cur = 0, found = false;
+  toks.forEach(t => {
+    let v;
+    if (/^\d+$/.test(t)) v = Number(t);
+    else if (NUMW[t] !== undefined) v = NUMW[t];
+    else return;
+    found = true;
+    if (v === 100 && cur < 100) cur = (cur || 1) * 100;
+    else if (v === 1000) { total += (cur || 1) * 1000; cur = 0; }
+    else cur += v;
+  });
+  const n = total + cur;
+  return found && n > 0 && n <= 100000 ? n : 0;
+}
+
+function bestSurah(tokens) {
+  if (!tokens.length) return 0;
+  const cands = new Set([tokens.join('')]);
+  tokens.forEach(t => cands.add(t));
+  for (let i = 0; i < tokens.length - 1; i++) cands.add(tokens[i] + tokens[i + 1]);
+  let best = 0, bd = 99;
+  cands.forEach(c0 => {
+    const c1 = (c0.indexOf('ال') === 0 && c0.length > 4) ? c0.slice(2) : c0;
+    for (let i = 0; i < 114; i++) {
+      const forms = [NN[i].full, NN[i].core].concat(AL[i + 1] || []);
+      for (const f of forms) {
+        for (const c of [c0, c1]) {
+          const d = lev(c, f), L = Math.min(c.length, f.length);
+          const th = L <= 3 ? 0 : (L <= 6 ? 1 : 2);
+          if (d <= th && d < bd) { bd = d; best = i + 1; }
+        }
+      }
+    }
+  });
+  return best;
+}
+
+function parse(text) {
+  const raw = norm(text);
+  if (!raw) return null;
+  const toks = raw.split(' ');
+  const joined = toks.join('');
+  const wantTrans = (raw.indexOf('ترجم') >= 0 || raw.indexOf('tarjum') >= 0 || raw.indexOf('translation') >= 0);
+  const noTrans = wantTrans && (raw.indexOf('بغیر') >= 0 || raw.indexOf('بند') >= 0 || raw.indexOf('نہیں') >= 0 || raw.indexOf('ہٹا') >= 0 || raw.indexOf('without') >= 0 || raw.indexOf(' off') >= 0);
+  const transFlag = wantTrans ? !noTrans : undefined;
+
+  /* خاص: آیت الکرسی، قل */
+  if (joined.indexOf('کرسی') >= 0 || joined.indexOf('kursi') >= 0) {
+    return { list: [{ s: 2, from: 255, to: 255, keep: false, label: 'آیت الکرسی' }], trans: transFlag };
+  }
+  if (toks.indexOf('قل') >= 0 || toks.indexOf('qul') >= 0) {
+    const three = toks.some(t => t.indexOf('تین') === 0 || t === '3' || t === 'teen');
+    const four = toks.some(t => t.indexOf('چار') === 0 || t === '4' || t === 'char' || t === 'chaar');
+    if (four) return { list: [full(109), full(112), full(113), full(114)], trans: transFlag };
+    if (three) return { list: [full(112), full(113), full(114)], trans: transFlag };
+  }
+  /* ذکر */
+  const zk = [['durood', ['درود', 'durood', 'darood']], ['istighfar', ['استغفار', 'istighfar']], ['sub', ['سبحان', 'subhan']], ['alhamd', ['الحمد', 'alhamd']], ['akbar', ['اکبر', 'akbar']], ['', ['ذکر', 'تسبیح', 'zikr', 'tasbeeh', 'tasbih']]];
+  const hasSurahWord = toks.indexOf(norm('سورہ')) >= 0 || toks.indexOf('surah') >= 0;
+  if (!hasSurahWord) {
+    for (const z of zk) {
+      if (toks.some(t => z[1].some(k => t.indexOf(norm(k)) === 0))) return { zikr: z[0], n: parseCount(toks), auto: true };
+    }
+  }
+  /* ہدف مقرر کرنا */
+  if (toks.some(t => ['ہدف', 'ٹارگٹ', 'target'].map(norm).indexOf(t) >= 0)) {
+    const n = parseCount(toks);
+    if (n) return { cmd: 'setTarget', n: n };
+  }
+  /* اگلی/پچھلی */
+  if (anyTok(toks, CMD.next)) return { cmd: hasSurahWord ? 'nextSurah' : 'next' };
+  if (anyTok(toks, CMD.prev)) return { cmd: hasSurahWord ? 'prevSurah' : 'prev' };
+  /* سورہ کا نام یا نمبر */
+  const nums = (raw.match(/\d+/g) || []).map(Number);
+  const nameToks = toks.filter(t => t && !FILL.has(t) && !/^\d+$/.test(t));
+  let s = bestSurah(nameToks), a = 0;
+  if (s) { if (nums[0] >= 1 && nums[0] <= COUNTS[s - 1]) a = nums[0]; }
+  else if (nums[0] >= 1 && nums[0] <= 114) { s = nums[0]; if (nums[1] >= 1 && nums[1] <= COUNTS[s - 1]) a = nums[1]; }
+  if (s) return { s: s, a: a, trans: transFlag };
+  /* ترجمہ کا حکم */
+  if (wantTrans) return { cmd: noTrans ? 'transOff' : 'transOn' };
+  if (anyTok(toks, CMD.home)) return { cmd: 'home' };
+  if (anyTok(toks, CMD.repeat)) return { cmd: 'repeat' };
+  if (anyTok(toks, CMD.pause)) return { cmd: 'pause' };
+  if (anyTok(toks, CMD.play)) return { cmd: 'play' };
+  return null;
+}
+
+function runCmd(c) {
+  const inPlayer = view === 'player';
+  switch (c) {
+    case 'pause': if (inPlayer) { pausePlayback(); return true; } break;
+    case 'play': if (inPlayer) resumePlayback(); else resumeLast(); return true;
+    case 'next': if (inPlayer) { nextAyah(); return true; } break;
+    case 'prev': if (inPlayer) { prevAyah(); return true; } break;
+    case 'nextSurah': if (inPlayer) { jumpSurah(1); return true; } break;
+    case 'prevSurah': if (inPlayer) { jumpSurah(-1); return true; } break;
+    case 'repeat': if (view === 'zikr') { zikrReset(); return true; } if (inPlayer) { P.phase = 'ar'; playCurrent(); return true; } break;
+    case 'home': goHome(); return true;
+    case 'transOn': setTrans(true); return true;
+    case 'transOff': setTrans(false); return true;
+  }
+  announce('یہ حکم یہاں نہیں چل سکتا');
+  tone('bad');
+  return false;
+}
+
+function act(p) {
+  if (p.list) { startList(p.list, p.list[0].from, p.trans); return; }
+  if (p.s) { startList([{ s: p.s, from: p.a || 1, to: COUNTS[p.s - 1], keep: true }], p.a || 1, p.trans); return; }
+  if (p.zikr !== undefined) { openZikr(p.zikr, { target: p.n || 0, auto: true }); return; }
+  if (p.cmd === 'setTarget') { setTargetVoice(p.n); return; }
+  runCmd(p.cmd);
+}
+
+/* ---------- مائیک ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, listening = false;
+function micUI(on) {
+  ['micBtn', 'plMic', 'zMic'].forEach(id => { $(id).classList.toggle('on', on); });
+}
+function stopListening() { try { if (rec) rec.abort(); } catch (e) {} listening = false; micUI(false); }
+
+function listen() {
+  unlock();
+  if (listening) { stopListening(); return; }
+  if (!SR) { tone('bad'); announce('اس براؤزر میں آواز پہچاننا موجود نہیں۔ نیچے فہرست سے سورہ چنیں۔', true); return; }
+  const resumeAfter = view === 'player' && P.want;
+  if (resumeAfter) pausePlayback();
+  let heard = false, lang = lsGet('qs_lang') || 'ur-PK', timer = 0;
+  const finish = () => {
+    clearTimeout(timer); listening = false; micUI(false);
+    if (!heard && resumeAfter) resumePlayback();
+  };
+  const begin = () => {
+    rec = new SR();
+    rec.lang = lang; rec.interimResults = false; rec.maxAlternatives = 5; rec.continuous = false;
+    rec.onresult = e => {
+      heard = true;
+      const alts = [];
+      for (let i = 0; i < e.results[0].length; i++) alts.push(e.results[0][i].transcript);
+      const parsed = alts.map(parse).filter(Boolean);
+      const pick = parsed.filter(p => p.s || p.list || p.zikr !== undefined)[0] || parsed[0];
+      if (!pick) {
+        tone('bad'); announce('سمجھ نہیں آیا، دوبارہ بولیں: ' + (alts[0] || ''), true);
+        heard = false; return;
+      }
+      tone('ok'); act(pick);
+    };
+    rec.onerror = e => {
+      const er = e && e.error;
+      if (er === 'language-not-supported' && lang === 'ur-PK') { lang = 'en-IN'; lsSet('qs_lang', lang); begin(); return; }
+      tone('bad');
+      if (er === 'not-allowed' || er === 'service-not-allowed') announce('مائیک کی اجازت دیں، اور سیٹنگز میں Siri اور ڈکٹیشن آن ہوں', true);
+      else if (er === 'no-speech') announce('کچھ سنائی نہیں دیا، دوبارہ دبائیں', true);
+      else if (er === 'network') announce('انٹرنیٹ چیک کریں', true);
+      else if (er !== 'aborted') announce('آواز سمجھنے میں مسئلہ آیا', true);
+    };
+    rec.onend = finish;
+    listening = true; micUI(true);
+    tone('listen'); announce('بولیں…', true);
+    timer = setTimeout(() => { try { rec.stop(); } catch (e) {} }, 10000);
+    try { rec.start(); } catch (e) { finish(); }
+  };
+  setTimeout(begin, resumeAfter ? 120 : 0);
+}
+
+/* ---------- ذکر: والد خود ذکر کریں، ایپ گنتی رکھے اور ہدف پورا ہونے پر بتائے ---------- */
+const TARGETS = [33, 100, 313, 500, 1000];
+const Z = { item: null, count: 0, target: 33, wake: null, done: false };
+let urVoice = null;
+function loadVoices() {
+  if (!('speechSynthesis' in window)) return;
+  const vs = speechSynthesis.getVoices() || [];
+  urVoice = vs.filter(v => (v.lang || '').toLowerCase().indexOf('ur') === 0)[0] || null;
+}
+function say(text) {
+  try {
+    if (!urVoice) return;
+    const u = new SpeechSynthesisUtterance(text); u.voice = urVoice; u.lang = urVoice.lang;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+function requestWake() { try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(l => { Z.wake = l; }).catch(() => {}); } catch (e) {} }
+function releaseWake() { try { if (Z.wake) { Z.wake.release(); Z.wake = null; } } catch (e) {} }
+function todayKey() { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+function getDayTotal() {
+  try { const o = JSON.parse(lsGet('qs_zday') || 'null'); if (o && o.d === todayKey()) return o.n | 0; } catch (e) {}
+  return 0;
+}
+function addDayTotal(n) { const v = Math.max(0, getDayTotal() + n); lsSet('qs_zday', JSON.stringify({ d: todayKey(), n: v })); return v; }
+function saveZ() { if (Z.item) lsSet('qs_z', JSON.stringify({ k: Z.item.k, count: Z.count, target: Z.target })); }
+function updateZ() {
+  $('zCount').textContent = Z.count + ' / ' + Z.target;
+  $('zTotal').textContent = 'آج کا کل ذکر: ' + getDayTotal();
+  $('zTarget').textContent = 'ہدف: ' + Z.target;
+  $('zTarget').setAttribute('aria-label', 'ہدف ' + Z.target + '، بدلنے کے لیے دبائیں');
+  $('zTapText').textContent = Z.done ? 'ہدف مکمل' : 'دبائیں';
+}
+function zikrTap() {
+  if (!Z.item) return;
+  if (Z.count >= Z.target) { tone('done'); announce('ہدف مکمل ہو چکا ہے۔ نیا شروع کرنے کے لیے "صفر سے شروع" دبائیں', true); return; }
+  Z.count++; addDayTotal(1); saveZ();
+  if (Z.count >= Z.target) {
+    Z.done = true; releaseWake(); updateZ();
+    tone('done'); setTimeout(() => tone('done'), 900);
+    announce('ماشاءاللہ! آپ کا ہدف ' + Z.target + ' مکمل ہو گیا', true);
+    say('آپ کا ہدف مکمل ہو گیا');
+    return;
+  }
+  if (Z.count % 10 === 0) { tone('ten'); announce(Z.count + ' / ' + Z.target); } else tone('tick');
+  updateZ();
+}
+function zikrUndo() {
+  if (!Z.item || Z.count <= 0) { tone('bad'); return; }
+  Z.count--; addDayTotal(-1); Z.done = false; saveZ(); updateZ(); tone('tick');
+}
+function setTarget(n) {
+  if (!Z.item || !(n > 0)) return;
+  Z.target = n; Z.done = Z.count >= Z.target; saveZ(); updateZ(); tone('ok');
+  announce('ہدف ' + n);
+}
+function zikrTarget() {
+  if (!Z.item) return;
+  const i = TARGETS.indexOf(Z.target);
+  setTarget(TARGETS[(i + 1) % TARGETS.length]);
+}
+function setTargetVoice(n) {
+  if (view === 'zikr' && Z.item && !$('zRun').hidden) { setTarget(n); return; }
+  openZikr('', { target: n });
+}
+function zikrReset() {
+  if (!Z.item) return;
+  Z.count = 0; Z.done = false; saveZ(); updateZ(); requestWake(); tone('ok');
+  announce('گنتی صفر سے شروع');
+}
+function stopZikr() { releaseWake(); }
+function lastZikr() {
+  try { const o = JSON.parse(lsGet('qs_z') || 'null'); if (o) return ZIKR.filter(z => z.k === o.k)[0] || null; } catch (e) {}
+  return null;
+}
+function startZikr(it, opts) {
+  opts = opts || {};
+  Z.item = it; Z.target = it.n; Z.count = 0;
+  try {
+    const o = JSON.parse(lsGet('qs_z') || 'null');
+    if (o && o.k === it.k) { Z.target = o.target > 0 ? o.target : it.n; Z.count = Math.min(o.count | 0, Z.target); }
+  } catch (e) {}
+  if (opts.target) { Z.target = opts.target; Z.count = 0; }
+  else if (opts.auto && Z.count >= Z.target) Z.count = 0;
+  Z.done = Z.count >= Z.target;
+  saveZ();
+  $('zPick').hidden = true; $('zRun').hidden = false;
+  $('zName').textContent = it.ur; $('zText').textContent = it.ar;
+  updateZ(); if (!Z.done) requestWake();
+  announce(it.ur + '، ' + Z.count + ' / ' + Z.target);
+  setTimeout(() => { try { $('zTap').focus({ preventScroll: true }); } catch (e) {} }, 80);
+}
+function showZPick() { stopZikr(); $('zPick').hidden = false; $('zRun').hidden = true; }
+function openZikr(key, opts) {
+  opts = opts || {};
+  pausePlayback(); stopListening();
+  show('zikr');
+  let it = ZIKR.filter(z => z.k === key)[0];
+  if (!it && (opts.auto || opts.target)) it = lastZikr() || ZIKR[0];
+  if (it) startZikr(it, opts); else showZPick();
+}
+
+/* ---------- ہوم ---------- */
+function goHome() {
+  pausePlayback(); stopZikr(); stopListening();
+  show('home'); refreshResume();
+}
+function resumeLast() {
+  const l = getLast();
+  if (l) startList([{ s: l.s, from: l.a, to: COUNTS[l.s - 1], keep: true }], l.a);
+  else startList([full(1)], 1);
+}
+function refreshResume() {
+  const l = getLast();
+  $('resumeBtn').querySelector('span').textContent = l
+    ? 'جہاں رکے تھے وہیں سے جاری رکھیں (سورہ ' + NAMES[l.s - 1] + '، آیت ' + l.a + ')'
+    : 'سورہ الفاتحہ سے شروع کریں';
+}
+
+function build() {
+  const q = $('quick');
+  QUICK.forEach(it => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = it.t;
+    b.onclick = () => { unlock(); const l = it.make(); startList(l, l[0].from); };
+    q.appendChild(b);
+  });
+  const all = $('allSurahs');
+  NAMES.forEach((n, i) => {
+    const b = document.createElement('button'); b.type = 'button';
+    b.textContent = (i + 1) + '. ' + n;
+    b.setAttribute('aria-label', 'سورہ ' + n + '، نمبر ' + (i + 1));
+    b.onclick = () => { unlock(); startList([full(i + 1)], 1); };
+    all.appendChild(b);
+  });
+  const zp = $('zPick');
+  ZIKR.forEach(z => {
+    const b = document.createElement('button'); b.type = 'button';
+    b.innerHTML = '<span></span><small></small>';
+    b.firstChild.textContent = z.ur; b.lastChild.textContent = z.n + ' بار';
+    b.setAttribute('aria-label', z.ur + '، ' + z.n + ' بار');
+    b.onclick = () => startZikr(z);
+    zp.appendChild(b);
+  });
+}
+
+function wire() {
+  $('micBtn').onclick = listen;
+  $('plMic').onclick = listen;
+  $('modeWith').onclick = () => setTrans(true);
+  $('modeWithout').onclick = () => setTrans(false);
+  $('resumeBtn').onclick = () => { unlock(); resumeLast(); };
+  $('zikrBtn').onclick = () => openZikr('');
+  $('playPause').onclick = () => { if (P.want) pausePlayback(); else resumePlayback(); };
+  $('prevBtn').onclick = prevAyah;
+  $('nextBtn').onclick = nextAyah;
+  $('transBtn').onclick = () => setTrans(!TRANS);
+  $('homeBtn').onclick = goHome;
+  $('zHome').onclick = goHome;
+  $('zBack').onclick = showZPick;
+  $('zMore').onclick = zikrReset;
+  $('zTap').onclick = zikrTap;
+  $('zUndo').onclick = zikrUndo;
+  $('zTarget').onclick = zikrTarget;
+  $('zMic').onclick = listen;
+}
+
+build(); wire(); setTrans(TRANS, true); refreshResume(); loadVoices();
+if ('speechSynthesis' in window) { try { speechSynthesis.addEventListener('voiceschanged', loadVoices); } catch (e) {} }
+window.__qs = { parse: parse, norm: norm, COUNTS: COUNTS, NAMES: NAMES, Z: Z, ZIKR: ZIKR, startZikr: startZikr, zikrTap: zikrTap, zikrUndo: zikrUndo, setTargetVoice: setTargetVoice, act: act };
+})();
+</script>
+</body>
+</html>
