@@ -105,7 +105,7 @@ svg{flex:none}
   <header>
     <h1 tabindex="-1">قرآن سنیں</h1>
     <p class="greet">السلام علیکم</p>
-    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v16</p>
+    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v17</p>
   </header>
 
   <button id="micBtn" type="button" class="hero" aria-label="بولنے کے لیے دبائیں، پھر سورہ کا نام بولیں">
@@ -851,15 +851,20 @@ function say(text) {
 function requestWake() { try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(l => { Z.wake = l; }).catch(() => {}); } catch (e) {} }
 function releaseWake() { try { if (Z.wake) { Z.wake.release(); Z.wake = null; } } catch (e) {} }
 function todayKey() { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
-function getDayTotal() {
-  try { const o = JSON.parse(lsGet('qs_zday') || 'null'); if (o && o.d === todayKey()) return o.n | 0; } catch (e) {}
-  return 0;
+function dayData() {
+  try { const o = JSON.parse(lsGet('qs_zday') || 'null'); if (o && o.d === todayKey()) { o.by = o.by || {}; return o; } } catch (e) {}
+  return { d: todayKey(), by: {} };
 }
-function addDayTotal(n) { const v = Math.max(0, getDayTotal() + n); lsSet('qs_zday', JSON.stringify({ d: todayKey(), n: v })); return v; }
+function getDayTotal(k) { const o = dayData(); return (o.by[k || (Z.item && Z.item.k)] | 0); }
+function addDayTotal(n) {
+  const k = Z.item && Z.item.k; if (!k) return 0;
+  const o = dayData(); o.by[k] = Math.max(0, (o.by[k] | 0) + n);
+  lsSet('qs_zday', JSON.stringify(o)); return o.by[k];
+}
 function saveZ() { if (Z.item) lsSet('qs_z', JSON.stringify({ k: Z.item.k, count: Z.count, target: Z.target })); }
 function updateZ() {
   $('zCount').textContent = Z.count + ' / ' + Z.target;
-  $('zTotal').textContent = 'آج کا کل ذکر: ' + getDayTotal();
+  $('zTotal').textContent = 'آج کا ' + (Z.item ? Z.item.ur : 'ذکر') + ': ' + getDayTotal();
   $('zTarget').textContent = 'ہدف: ' + Z.target;
   $('zTarget').setAttribute('aria-label', 'ہدف ' + Z.target + '، بدلنے کے لیے دبائیں');
   tapLabel();
