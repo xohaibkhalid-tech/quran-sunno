@@ -89,7 +89,7 @@ svg{flex:none}
   <header>
     <h1 tabindex="-1">قرآن سنیں</h1>
     <p class="greet">السلام علیکم</p>
-    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v6</p>
+    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v7</p>
   </header>
 
   <button id="micBtn" type="button" class="hero" aria-label="بولنے کے لیے دبائیں، پھر سورہ کا نام بولیں">
@@ -668,7 +668,7 @@ function stopListening() {
 
 
 /* ---------- Cloud awaaz pehchan (iPhone ke liye): record -> WAV -> Worker -> Urdu text ---------- */
-const WORKER_URL = '';
+const WORKER_URL = 'https://quran-voice.xohaibkhalid.workers.dev/';
 function toWav(abuf) {
   const sr = 16000, ch = abuf.getChannelData(0), ratio = abuf.sampleRate / sr, n = Math.floor(ch.length / ratio);
   const d = new DataView(new ArrayBuffer(44 + n * 2));
