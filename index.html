@@ -666,7 +666,6 @@ function stopListening() {
 }
 
 function listen() {
-  unlock();
   if (listening) { stopListening(); announce(''); return; }
   if (!SR) { tone('bad'); announce('اس براؤزر میں آواز پہچاننا موجود نہیں۔ نیچے فہرست سے سورہ چنیں۔', true); return; }
   const resumeAfter = view === 'player' && P.want;
@@ -721,7 +720,6 @@ function attempt(li, tries, resumeAfter) {
   };
   r.onend = () => { if (rec !== r) return; conclude(); };
   listening = true; micUI(true);
-  if (tries === 0) tone('listen');
   announce('بولیں… (' + LANG_NAMES[lang] + ')', true);
   recTimer = setTimeout(() => { if (rec !== r) return; try { r.stop(); } catch (x) {} setTimeout(conclude, 1500); }, 9000);
   try { r.start(); } catch (x) { conclude(); }
@@ -879,6 +877,11 @@ function wire() {
   $('resumeBtn').onclick = () => { unlock(); resumeLast(); };
   $('zikrBtn').onclick = () => openZikr('');
   $('langBtn').onclick = cycleLang;
+  document.addEventListener('pointerdown', e => {
+    const b = e.target && e.target.closest ? e.target.closest('button') : null;
+    if (b && (b.id === 'micBtn' || b.id === 'plMic' || b.id === 'zMic')) return;
+    unlock();
+  }, true);
   $('playPause').onclick = () => { if (P.want) pausePlayback(); else resumePlayback(); };
   $('prevBtn').onclick = prevAyah;
   $('nextBtn').onclick = nextAyah;
