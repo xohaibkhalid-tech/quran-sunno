@@ -54,8 +54,14 @@ button:focus-visible{outline:5px solid #fff;outline-offset:3px}
   background:var(--accent);color:var(--accent-fg);border-color:transparent;font-size:2.2rem;
 }
 .hero small{font-size:1.1rem;font-weight:500;opacity:.85}
-#player-view:not([hidden]){min-height:calc(100svh - 32px)}
-#player-view #playPause{flex:1 1 auto;min-height:48svh;font-size:2rem}
+#player-view:not([hidden]){position:fixed;inset:0;max-width:none;margin:0;padding:0;gap:0;display:block}
+#player-view #playPause{position:fixed;inset:0;width:100%;height:100%;min-height:0;border-radius:0;font-size:2.4rem;z-index:1;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+#player-view header{position:fixed;top:0;left:0;right:0;z-index:2;pointer-events:none;padding:calc(env(safe-area-inset-top,0px) + 56px) 16px 0;text-align:center;color:#1a1305}
+#player-view header h1,#player-view header .greet{color:#1a1305}
+#plMore{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:8px;z-index:4;min-height:44px;width:auto;padding:6px 16px;font-size:1rem;opacity:.85}
+#plTools{position:fixed;left:0;right:0;bottom:0;z-index:3;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 12px calc(env(safe-area-inset-bottom,0px) + 12px);background:#0f1722}
+#plTools[hidden]{display:none}
+#plTools button{min-height:56px;font-size:1.05rem}
 .hero.tall{min-height:300px;min-height:min(46svh,440px)}
 .hero.on{animation:pulse 1.2s ease-in-out infinite}
 @keyframes pulse{50%{box-shadow:0 0 0 14px rgba(242,183,60,.35)}}
@@ -91,7 +97,7 @@ svg{flex:none}
   <header>
     <h1 tabindex="-1">قرآن سنیں</h1>
     <p class="greet">السلام علیکم</p>
-    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v9</p>
+    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v10</p>
   </header>
 
   <button id="micBtn" type="button" class="hero" aria-label="بولنے کے لیے دبائیں، پھر سورہ کا نام بولیں">
@@ -129,17 +135,14 @@ svg{flex:none}
     <span id="ppText">روکیں</span>
   </button>
 
-  <div class="two">
+  <button id="plMore" type="button" aria-label="مزید بٹن">⋯ مزید</button>
+  <div id="plTools" hidden>
     <button id="prevBtn" type="button">پچھلی آیت</button>
     <button id="nextBtn" type="button">اگلی آیت</button>
-  </div>
-
-  <div class="two">
     <button id="plMic" type="button" aria-label="بولنے کے لیے دبائیں">بولیں</button>
     <button id="transBtn" type="button">ترجمہ: ساتھ</button>
+    <button id="homeBtn" type="button" style="grid-column:1/3">واپس ہوم</button>
   </div>
-
-  <button id="homeBtn" type="button" class="wide">واپس ہوم</button>
 </main>
 
 <!-- ============ ZIKR ============ -->
@@ -940,7 +943,15 @@ function wire() {
     const b = e.target && e.target.closest ? e.target.closest('button') : null;
     unlock();
   }, true);
-  $('playPause').onclick = () => { if (P.want) pausePlayback(); else resumePlayback(); };
+
+  (function(){
+    const pp=$('playPause'); let tm=0, long=false;
+    pp.addEventListener('pointerdown',()=>{long=false;clearTimeout(tm);tm=setTimeout(()=>{long=true;listen();},650);});
+    ['pointerup','pointercancel','pointerleave'].forEach(n=>pp.addEventListener(n,()=>clearTimeout(tm)));
+    pp.addEventListener('contextmenu',e=>e.preventDefault());
+    pp.onclick=()=>{ if(long){long=false;return;} if(listening){stopListening();return;} if(P.want) pausePlayback(); else resumePlayback(); };
+    $('plMore').onclick=()=>{ const t=$('plTools'); t.hidden=!t.hidden; };
+  })();
   $('prevBtn').onclick = prevAyah;
   $('nextBtn').onclick = nextAyah;
   $('transBtn').onclick = () => setTrans(!TRANS);
