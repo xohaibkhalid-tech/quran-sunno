@@ -105,7 +105,7 @@ svg{flex:none}
   <header>
     <h1 tabindex="-1">قرآن سنیں</h1>
     <p class="greet">السلام علیکم</p>
-    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v12</p>
+    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v13</p>
   </header>
 
   <button id="micBtn" type="button" class="hero" aria-label="بولنے کے لیے دبائیں، پھر سورہ کا نام بولیں">
@@ -837,6 +837,22 @@ function updateZ() {
 
 /* ---------- خودکار گنتی: والد صرف ذکر بولیں، ایپ آواز کے ٹکڑے گن کر گنتی بڑھائے ---------- */
 let ACX = null;
+
+/* اردو آواز کے چھوٹے کلپس (Web Audio سے، تاکہ iPhone پر خود بخود چلیں) */
+const CLIPS = {};
+function clipBuf(name) {
+  if (!CLIPS[name]) CLIPS[name] = fetch('audio/' + name + '.mp3').then(r => r.arrayBuffer()).then(b => new Promise((ok, no) => ACX.decodeAudioData(b, ok, no)));
+  return CLIPS[name];
+}
+async function playClip(name) {
+  try {
+    if (!ACX) { const A = window.AudioContext || window.webkitAudioContext; ACX = new A(); }
+    try { await ACX.resume(); } catch (e) {}
+    const b = await clipBuf(name);
+    const src = ACX.createBufferSource(); src.buffer = b; src.connect(ACX.destination); src.start();
+    return b.duration;
+  } catch (e) { return 0; }
+}
 const AUTO = { on: false, resume: false, stream: null, iv: 0 };
 function autoLabel() { const b = $('zAuto'); if (b) b.textContent = 'خودکار گنتی: ' + (AUTO.on ? 'چالو' : 'بند'); tapLabel(); }
 function tapLabel() { const t = $('zTapText'); if (t) t.textContent = Z.done ? 'ہدف مکمل' : (AUTO.on ? 'سن رہا ہوں، روکنے کے لیے دبائیں' : 'شروع کرنے کے لیے دبائیں'); }
@@ -851,6 +867,7 @@ async function autoStart() {
   const AC = window.AudioContext || window.webkitAudioContext;
   if (!ACX) ACX = new AC();
   try { await ACX.resume(); } catch (e) {}
+  clipBuf('done').catch(() => {}); clipBuf('start').catch(() => {});
   const an = ACX.createAnalyser(); an.fftSize = 1024;
   const src = ACX.createMediaStreamSource(stream); src.connect(an);
   const buf = new Float32Array(an.fftSize);
@@ -868,7 +885,8 @@ async function autoStart() {
         st.cal.sort((a, b) => a - b);
         const floor = st.cal[Math.floor(st.cal.length * 0.9)] || 0.005;
         st.thr = Math.max(0.02, floor * 3); st.lo = st.thr * 0.55; st.ready = true;
-        tone('ten'); st.mute = Date.now() + 900;
+        tone('ten'); st.mute = Date.now() + 3000;
+        playClip('start').then(d => { st.mute = Date.now() + d * 1000 + 500; });
         announce('شروع کریں، ایپ سن رہی ہے۔ ' + Z.count + ' / ' + Z.target, true);
       }
       return;
@@ -919,7 +937,7 @@ function zikrTap(quiet) {
   Z.count++; addDayTotal(1); saveZ();
   if (Z.count >= Z.target) {
     Z.done = true; releaseWake(); updateZ(); autoStop();
-    tone('done'); setTimeout(() => tone('done'), 900);
+    tone('done'); setTimeout(() => playClip('done'), 700);
     announce('ماشاءاللہ! آپ کا ہدف ' + Z.target + ' مکمل ہو گیا', true);
     say('آپ کا ہدف مکمل ہو گیا');
     return;
