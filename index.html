@@ -642,6 +642,7 @@ function listen() {
     rec.lang = lang; rec.interimResults = false; rec.maxAlternatives = 5; rec.continuous = false;
     rec.onresult = e => {
       heard = true;
+      if (lang !== 'ur-PK') lsSet('qs_lang', lang);
       const alts = [];
       for (let i = 0; i < e.results[0].length; i++) alts.push(e.results[0][i].transcript);
       const parsed = alts.map(parse).filter(Boolean);
@@ -654,14 +655,15 @@ function listen() {
     };
     rec.onerror = e => {
       const er = e && e.error;
-      if (er === 'language-not-supported' && lang === 'ur-PK') { lang = 'en-IN'; lsSet('qs_lang', lang); begin(); return; }
+      if (lang === 'ur-PK' && (er === 'language-not-supported' || er === 'service-not-allowed' || er === 'not-allowed')) { lang = 'en-IN'; begin(); return; }
       tone('bad');
       if (er === 'not-allowed' || er === 'service-not-allowed') announce('مائیک کی اجازت دیں، اور سیٹنگز میں Siri اور ڈکٹیشن آن ہوں', true);
       else if (er === 'no-speech') announce('کچھ سنائی نہیں دیا، دوبارہ دبائیں', true);
       else if (er === 'network') announce('انٹرنیٹ چیک کریں', true);
       else if (er !== 'aborted') announce('آواز سمجھنے میں مسئلہ آیا', true);
     };
-    rec.onend = finish;
+    const me = rec;
+    rec.onend = () => { if (rec !== me) return; finish(); };
     listening = true; micUI(true);
     tone('listen'); announce('بولیں…', true);
     timer = setTimeout(() => { try { rec.stop(); } catch (e) {} }, 10000);
