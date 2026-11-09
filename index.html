@@ -105,7 +105,7 @@ svg{flex:none}
   <header>
     <h1 tabindex="-1">قرآن سنیں</h1>
     <p class="greet">السلام علیکم</p>
-    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v13</p>
+    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v14</p>
   </header>
 
   <button id="micBtn" type="button" class="hero" aria-label="بولنے کے لیے دبائیں، پھر سورہ کا نام بولیں">
@@ -695,7 +695,9 @@ function toWav(abuf) {
   w(0, 'RIFF'); d.setUint32(4, 36 + n * 2, true); w(8, 'WAVEfmt '); d.setUint32(16, 16, true); d.setUint16(20, 1, true);
   d.setUint16(22, 1, true); d.setUint32(24, sr, true); d.setUint32(28, sr * 2, true); d.setUint16(32, 2, true); d.setUint16(34, 16, true);
   w(36, 'data'); d.setUint32(40, n * 2, true);
-  for (let i = 0; i < n; i++) { const v = Math.max(-1, Math.min(1, ch[Math.floor(i * ratio)])); d.setInt16(44 + i * 2, v < 0 ? v * 0x8000 : v * 0x7fff, true); }
+  let pk = 0; for (let i = 0; i < ch.length; i++) { const a = Math.abs(ch[i]); if (a > pk) pk = a; }
+  const gain = pk > 0.001 ? Math.min(20, 0.9 / pk) : 1; toWav.peak = pk;
+  for (let i = 0; i < n; i++) { const v = Math.max(-1, Math.min(1, ch[Math.floor(i * ratio)] * gain)); d.setInt16(44 + i * 2, v < 0 ? v * 0x8000 : v * 0x7fff, true); }
   return d.buffer;
 }
 async function cloudListen(resumeAfter) {
@@ -706,8 +708,8 @@ async function cloudListen(resumeAfter) {
   listening = true; micUI(true); announce('Bolein…', true);
   const MR = window.MediaRecorder; const chunks = []; let mr;
   try { mr = new MR(stream); } catch (e) { stream.getTracks().forEach(t => t.stop()); return end('Is browser mein recording nahi chalti.'); }
-  const AC = window.AudioContext || window.webkitAudioContext; const ac = new AC(); const an = ac.createAnalyser(); an.fftSize = 1024;
-  ac.createMediaStreamSource(stream).connect(an); const buf = new Uint8Array(an.fftSize);
+  const AC = window.AudioContext || window.webkitAudioContext; if (!ACX) ACX = new AC(); const ac = ACX; try { ac.resume(); } catch (e) {} const an = ac.createAnalyser(); an.fftSize = 1024;
+  const msrc = ac.createMediaStreamSource(stream); msrc.connect(an); const buf = new Uint8Array(an.fftSize);
   let heard = false, quiet = 0, t0 = Date.now(), stopped = false;
   const stop = () => { if (stopped) return; stopped = true; clearInterval(iv); try { mr.stop(); } catch (e) {} };
   rec = { abort: stop };
@@ -719,19 +721,20 @@ async function cloudListen(resumeAfter) {
   }, 100);
   mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
   mr.onstop = async () => {
-    stream.getTracks().forEach(t => t.stop()); const was = rec; rec = null;
-    if (!heard) { try { ac.close(); } catch (e) {} return end('Awaaz nahi aayi, dobara dabayein.'); }
+    stream.getTracks().forEach(t => t.stop()); try { msrc.disconnect(); } catch (e) {} const was = rec; rec = null;
+    if (!heard) { return end('Awaaz nahi aayi, dobara dabayein.'); }
     announce('Samajh raha hoon…', true);
     try {
       const ab = await new Blob(chunks).arrayBuffer();
       const dec = await new Promise((ok, no) => ac.decodeAudioData(ab, ok, no));
-      try { ac.close(); } catch (e) {}
-      const r = await fetch(WORKER_URL, { method: 'POST', body: toWav(dec) });
+      const wav = toWav(dec);
+      const r = await fetch(WORKER_URL, { method: 'POST', body: wav });
       const j = await r.json(); const text = (j.text || '').trim();
       listening = false; micUI(false);
-      const p = text && parse(text);
+      const urdu = /[\u0600-\u06FF]/.test(text);
+      const p = urdu && parse(text);
       if (p) { tone('ok'); act(p); autoMaybe(); }
-      else { tone('bad'); announce(text ? 'Samajh nahi aaya. Suna: ' + text : 'Kuch samajh nahi aaya, dobara bolein.', true); if (resumeAfter) resumePlayback(); autoMaybe(); }
+      else { tone('bad'); announce(urdu ? 'Samajh nahi aaya. Suna: ' + text : 'Awaaz saaf nahi aayi, mic ke qareeb ho kar dobara bolein. [' + (dec.duration).toFixed(1) + 's, level ' + (toWav.peak || 0).toFixed(2) + ']', true); if (resumeAfter) resumePlayback(); autoMaybe(); }
     } catch (e) { end('Internet ya server ka masla: ' + e); }
   };
   mr.start();
