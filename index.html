@@ -112,7 +112,7 @@ svg{flex:none}
   <header>
     <h1 tabindex="-1">قرآن سنیں</h1>
     <p class="greet">السلام علیکم</p>
-    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v19</p>
+    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v21</p>
   </header>
 
   <button id="homeMore" type="button">⋯ مزید</button>
@@ -633,11 +633,21 @@ function parse(text) {
     const key = isAsr ? 'kalima_a' : isFajr ? 'kalima_f' : (new Date().getHours() < 15 ? 'kalima_f' : 'kalima_a');
     return { zikr: key, n: parseCount(toks), auto: true };
   }
-  const zk = [['durood', ['درود', 'durood', 'darood']], ['istighfar', ['استغفار', 'istighfar']], ['sub', ['سبحان', 'subhan']], ['alhamd', ['الحمد', 'alhamd']], ['akbar', ['اکبر', 'akbar']], ['', ['ذکر', 'تسبیح', 'zikr', 'tasbeeh', 'tasbih']]];
+  const zk = [['tahlil', []], ['durood', ['درود', 'durood', 'darood', 'اللہم', 'اللهم', 'allahumma', 'salli']], ['istighfar', ['استغفار', 'استغفر', 'istighfar', 'astaghfir', 'astagfir', 'istaghfar']], ['sub', ['سبحان', 'subhan']], ['alhamd', ['الحمد', 'alhamd']], ['akbar', ['اکبر', 'akbar']], ['', ['ذکر', 'تسبیح', 'zikr', 'tasbeeh', 'tasbih']]];
   const hasSurahWord = toks.indexOf(norm('سورہ')) >= 0 || toks.indexOf('surah') >= 0;
   if (!hasSurahWord) {
     for (const z of zk) {
-      if (toks.some(t => z[1].some(k => t.indexOf(norm(k)) === 0))) return { zikr: z[0], n: parseCount(toks), auto: true };
+      if (z[0] === 'tahlil') {
+        const hasLa = toks.indexOf(norm('لا')) >= 0 || toks.indexOf('la') >= 0 || toks.indexOf('laa') >= 0;
+        const hasIlah = toks.some(t => t.indexOf(norm('الہ')) === 0 || t.indexOf(norm('إله')) === 0 || t.indexOf('ilah') === 0 || t === norm('لاالہ') || t === norm('لاإله'));
+        if ((hasLa && hasIlah) || toks.some(t => t.indexOf('laila') === 0 || t === norm('لاالہ'))) {
+          const longK = toks.some(t => ['وحدہ', 'شریک', 'ملک', 'wahdahu', 'sharika', 'mulk'].map(norm).some(k => t.indexOf(k) === 0));
+          if (true) return { zikr: (toks.some(t => t.indexOf(norm('عصر')) === 0 || t === 'asr') ? 'kalima_a' : toks.some(t => t.indexOf(norm('فجر')) === 0 || t === 'fajr') ? 'kalima_f' : (new Date().getHours() < 15 ? 'kalima_f' : 'kalima_a')), n: parseCount(toks), auto: true };
+          return { zikr: 'tahlil', n: parseCount(toks), auto: true };
+        }
+        continue;
+      }
+      if (toks.some(t => z[1].some(k => { const nk = norm(k); return t.indexOf(nk) === 0 || (k.length >= 5 && t.indexOf(nk) >= 0); }))) return { zikr: z[0], n: parseCount(toks), auto: true };
     }
   }
   /* ہدف مقرر کرنا */
