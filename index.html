@@ -66,6 +66,13 @@ button:focus-visible{outline:5px solid #fff;outline-offset:3px}
 #zTools{position:fixed;left:0;right:0;bottom:0;z-index:3;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 12px calc(env(safe-area-inset-bottom,0px) + 12px);background:#0f1722}
 #zTools[hidden]{display:none}
 #zTools button{min-height:52px;font-size:1.05rem}
+#status{position:relative;z-index:30}
+#homeMore{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:8px;z-index:31;min-height:44px;width:auto;padding:6px 16px;font-size:1rem;opacity:.85}
+#home:not(.adv) > *:not(#micBtn):not(#homeMore){display:none}
+#home:not(.adv):not([hidden]) #micBtn{position:fixed;inset:0;width:100%;height:100%;min-height:0;border-radius:0;z-index:5;font-size:2.4rem;gap:14px}
+#home:not(.adv) #micBtn svg{width:120px;height:120px}
+#home:not(.adv) #micBtn small{font-size:1.15rem;max-width:80%;line-height:1.7}
+#home[hidden] #homeMore{display:none}
 #plMore{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:8px;z-index:4;min-height:44px;width:auto;padding:6px 16px;font-size:1rem;opacity:.85}
 #plTools{position:fixed;left:0;right:0;bottom:0;z-index:3;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 12px calc(env(safe-area-inset-bottom,0px) + 12px);background:#0f1722}
 #plTools[hidden]{display:none}
@@ -105,13 +112,14 @@ svg{flex:none}
   <header>
     <h1 tabindex="-1">قرآن سنیں</h1>
     <p class="greet">السلام علیکم</p>
-    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v18</p>
+    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v19</p>
   </header>
 
+  <button id="homeMore" type="button">⋯ مزید</button>
   <button id="micBtn" type="button" class="hero" aria-label="بولنے کے لیے دبائیں، پھر سورہ کا نام بولیں">
     <svg width="76" height="76" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg>
     <span>بولیں</span>
-    <small>سورہ کا نام بولیں</small>
+    <small>دبائیں، پھر بولیں: سورہ کہف لگاؤ، ذکر کرنا ہے، جاری رکھو</small>
   </button>
 
   <div class="mode" role="group" aria-label="ترجمہ کا انتخاب">
@@ -223,8 +231,8 @@ const ZIKR = [
   { k: 'alhamd',    ur: 'الحمد للہ',         ar: 'اَلْحَمْدُ لِلّٰهِ', n: 33 },
   { k: 'akbar',     ur: 'اللہ اکبر',         ar: 'اَللّٰهُ اَكْبَرُ', n: 34 },
   { k: 'tahlil',    ur: 'لا الٰہ الا اللہ',   ar: 'لَا اِلٰهَ اِلَّا اللّٰهُ', n: 100 },
-  { k: 'istighfar', ur: 'استغفار',           ar: 'اَسْتَغْفِرُ اللّٰهَ', n: 100, daily: 1000 },
-  { k: 'durood',    ur: 'درود شریف',         ar: 'اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ وَعَلَىٰ آلِ مُحَمَّدٍ', n: 100, daily: 1000 },
+  { k: 'istighfar', ur: 'استغفار',           ar: 'اَسْتَغْفِرُ اللّٰهَ', n: 1000, daily: 10000 },
+  { k: 'durood',    ur: 'درود شریف',         ar: 'اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ وَعَلَىٰ آلِ مُحَمَّدٍ', n: 1000, daily: 10000 },
   { k: 'kalima_f',  ur: 'کلمہ توحید (بعد فجر)', ar: 'لَا إِلَٰهَ إِلَّا اللّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ', n: 100, daily: 100 },
   { k: 'kalima_a',  ur: 'کلمہ توحید (بعد عصر)', ar: 'لَا إِلَٰهَ إِلَّا اللّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ', n: 100, daily: 100 },
   { k: 'tasbih',    ur: 'سبحان اللہ وبحمدہ', ar: 'سُبْحَانَ اللّٰهِ وَبِحَمْدِهِ سُبْحَانَ اللّٰهِ الْعَظِيمِ', n: 100 }
@@ -1099,6 +1107,7 @@ function build() {
 function wire() {
   $('micBtn').onclick = listen;
   $('plMic').onclick = listen;
+  $('homeMore').onclick = () => { const h = $('home'); h.classList.toggle('adv'); $('homeMore').textContent = h.classList.contains('adv') ? '✕ بند' : '⋯ مزید'; window.scrollTo(0, 0); };
   $('contBtn').onclick = () => setCont(!CONT()); $('plCont').onclick = () => setCont(!CONT()); setCont(CONT(), true);
   $('modeWith').onclick = () => setTrans(true);
   $('modeWithout').onclick = () => setTrans(false);
