@@ -58,6 +58,14 @@ button:focus-visible{outline:5px solid #fff;outline-offset:3px}
 #player-view #playPause{position:fixed;inset:0;width:100%;height:100%;min-height:0;border-radius:0;font-size:2.4rem;z-index:1;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;touch-action:manipulation}
 #player-view header{position:fixed;top:0;left:0;right:0;z-index:2;pointer-events:none;padding:calc(env(safe-area-inset-top,0px) + 56px) 16px 0;text-align:center;color:#1a1305}
 #player-view header h1,#player-view header .greet{color:#1a1305}
+#zRun:not([hidden]){position:fixed;inset:0;z-index:20;display:block;max-width:none;margin:0;padding:0}
+#zRun #zTap{position:fixed;inset:0;width:100%;height:100%;min-height:0;border-radius:0;z-index:1;font-size:2rem;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+#zHead{position:fixed;top:0;left:0;right:0;z-index:2;pointer-events:none;padding:calc(env(safe-area-inset-top,0px) + 56px) 16px 0;text-align:center}
+#zHead .zname,#zHead .arabic,#zHead .count{color:#1a1305}
+#zMoreBtn{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:8px;z-index:4;min-height:44px;width:auto;padding:6px 16px;font-size:1rem;opacity:.85}
+#zTools{position:fixed;left:0;right:0;bottom:0;z-index:3;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 12px calc(env(safe-area-inset-bottom,0px) + 12px);background:#0f1722}
+#zTools[hidden]{display:none}
+#zTools button{min-height:52px;font-size:1.05rem}
 #plMore{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:8px;z-index:4;min-height:44px;width:auto;padding:6px 16px;font-size:1rem;opacity:.85}
 #plTools{position:fixed;left:0;right:0;bottom:0;z-index:3;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 12px calc(env(safe-area-inset-bottom,0px) + 12px);background:#0f1722}
 #plTools[hidden]{display:none}
@@ -97,7 +105,7 @@ svg{flex:none}
   <header>
     <h1 tabindex="-1">قرآن سنیں</h1>
     <p class="greet">السلام علیکم</p>
-    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v11</p>
+    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v12</p>
   </header>
 
   <button id="micBtn" type="button" class="hero" aria-label="بولنے کے لیے دبائیں، پھر سورہ کا نام بولیں">
@@ -156,22 +164,26 @@ svg{flex:none}
   <section id="zPick" class="list one" aria-label="ذکر چنیں"></section>
 
   <section id="zRun" class="view" hidden>
-    <p id="zName" class="zname">&nbsp;</p>
-    <p id="zText" class="arabic" lang="ar" dir="rtl">&nbsp;</p>
-    <p id="zCount" class="count" aria-live="off">0 / 33</p>
-    <p id="zTotal" class="zname">&nbsp;</p>
-    <button id="zTap" type="button" class="hero tall" aria-label="گنتی بڑھانے کے لیے دبائیں">
-      <span id="zTapText">دبائیں</span>
-      <small>ہر بار ذکر کے بعد ایک بار دبائیں</small>
+    <div id="zHead">
+      <p id="zName" class="zname">&nbsp;</p>
+      <p id="zText" class="arabic" lang="ar" dir="rtl">&nbsp;</p>
+      <p id="zCount" class="count" dir="ltr" aria-live="off">0 / 33</p>
+      <p id="zTotal" class="zname">&nbsp;</p>
+    </div>
+    <button id="zTap" type="button" class="hero" aria-label="گنتی شروع یا روکنے کے لیے دبائیں">
+      <span id="zTapText">شروع کرنے کے لیے دبائیں</span>
+      <small>دبائے رکھیں تو بول سکتے ہیں</small>
     </button>
-    <button id="zAuto" type="button" class="wide">خودکار گنتی: بند</button>
-    <div class="two">
+    <button id="zMoreBtn" type="button" aria-label="مزید بٹن">⋯ مزید</button>
+    <div id="zTools" hidden>
+      <button id="zAuto" type="button">خودکار گنتی: بند</button>
+      <button id="zMic2" type="button">بولیں</button>
       <button id="zUndo" type="button">ایک کم</button>
       <button id="zTarget" type="button">ہدف: 33</button>
-    </div>
-    <div class="two">
       <button id="zMore" type="button">صفر سے شروع</button>
       <button id="zBack" type="button">دوسرا ذکر</button>
+      <button id="zTapManual" type="button">ایک گنیں</button>
+      <button id="zHome2" type="button">واپس ہوم</button>
     </div>
   </section>
 
@@ -656,7 +668,7 @@ function act(p) {
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null, listening = false;
 function micUI(on) {
-  ['micBtn', 'plMic', 'zMic'].forEach(id => { $(id).classList.toggle('on', on); });
+  ['micBtn', 'plMic', 'zMic', 'zMic2'].forEach(id => { $(id).classList.toggle('on', on); });
 }
 const LANGS = ['ur-PK', 'hi-IN', 'en-IN'];
 const LANG_NAMES = { 'ur-PK': 'Urdu', 'hi-IN': 'Hindi', 'en-IN': 'English' };
@@ -820,13 +832,14 @@ function updateZ() {
   $('zTotal').textContent = 'آج کا کل ذکر: ' + getDayTotal();
   $('zTarget').textContent = 'ہدف: ' + Z.target;
   $('zTarget').setAttribute('aria-label', 'ہدف ' + Z.target + '، بدلنے کے لیے دبائیں');
-  $('zTapText').textContent = Z.done ? 'ہدف مکمل' : 'دبائیں';
+  tapLabel();
 }
 
 /* ---------- خودکار گنتی: والد صرف ذکر بولیں، ایپ آواز کے ٹکڑے گن کر گنتی بڑھائے ---------- */
 let ACX = null;
 const AUTO = { on: false, resume: false, stream: null, iv: 0 };
-function autoLabel() { const b = $('zAuto'); if (b) b.textContent = 'خودکار گنتی: ' + (AUTO.on ? 'چالو' : 'بند'); }
+function autoLabel() { const b = $('zAuto'); if (b) b.textContent = 'خودکار گنتی: ' + (AUTO.on ? 'چالو' : 'بند'); tapLabel(); }
+function tapLabel() { const t = $('zTapText'); if (t) t.textContent = Z.done ? 'ہدف مکمل' : (AUTO.on ? 'سن رہا ہوں، روکنے کے لیے دبائیں' : 'شروع کرنے کے لیے دبائیں'); }
 async function autoStart() {
   if (AUTO.on || !Z.item || Z.done) return;
   if (!navigator.mediaDevices) { announce('اس براؤزر میں خودکار گنتی نہیں چلتی۔', true); return; }
@@ -1042,7 +1055,18 @@ function wire() {
   $('zHome').onclick = goHome;
   $('zBack').onclick = showZPick;
   $('zMore').onclick = zikrReset;
-  $('zTap').onclick = () => zikrTap();
+  (function(){
+    const zt=$('zTap'); let tm=0, long=false;
+    zt.addEventListener('pointerdown',()=>{long=false;clearTimeout(tm);tm=setTimeout(()=>{long=true;listen();},650);});
+    ['pointerup','pointercancel','pointerleave'].forEach(n=>zt.addEventListener(n,()=>clearTimeout(tm)));
+    zt.addEventListener('contextmenu',e=>e.preventDefault());
+    zt.onclick=()=>{ if(long){long=false;return;} if(listening){stopListening();return;}
+      if(Z.done){ tone('done'); announce('ہدف مکمل ہو چکا ہے۔ نیا شروع کرنے کے لیے "مزید" میں "صفر سے شروع" دبائیں', true); return; }
+      if(AUTO.on){ autoStop(); announce('گنتی رکی ہوئی ہے۔ ' + Z.count + ' / ' + Z.target, true); } else autoStart(); };
+    $('zMoreBtn').onclick=()=>{ const t=$('zTools'); t.hidden=!t.hidden; };
+    $('zMic2').onclick=listen; $('zHome2').onclick=goHome;
+    $('zTapManual').onclick=()=>zikrTap();
+  })();
   $('zAuto').onclick = () => { if (AUTO.on) { autoStop(); announce('خودکار گنتی بند', true); } else autoStart(); };
   $('zUndo').onclick = zikrUndo;
   $('zTarget').onclick = zikrTarget;
