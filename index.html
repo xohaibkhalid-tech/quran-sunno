@@ -105,7 +105,7 @@ svg{flex:none}
   <header>
     <h1 tabindex="-1">قرآن سنیں</h1>
     <p class="greet">السلام علیکم</p>
-    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v17</p>
+    <p class="greet" style="font-size:.8rem;margin-top:-6px">نسخہ v18</p>
   </header>
 
   <button id="micBtn" type="button" class="hero" aria-label="بولنے کے لیے دبائیں، پھر سورہ کا نام بولیں">
@@ -223,8 +223,10 @@ const ZIKR = [
   { k: 'alhamd',    ur: 'الحمد للہ',         ar: 'اَلْحَمْدُ لِلّٰهِ', n: 33 },
   { k: 'akbar',     ur: 'اللہ اکبر',         ar: 'اَللّٰهُ اَكْبَرُ', n: 34 },
   { k: 'tahlil',    ur: 'لا الٰہ الا اللہ',   ar: 'لَا اِلٰهَ اِلَّا اللّٰهُ', n: 100 },
-  { k: 'istighfar', ur: 'استغفار',           ar: 'اَسْتَغْفِرُ اللّٰهَ', n: 100 },
-  { k: 'durood',    ur: 'درود شریف',         ar: 'صَلَّى اللّٰهُ عَلَيْهِ وَسَلَّمَ', n: 100 },
+  { k: 'istighfar', ur: 'استغفار',           ar: 'اَسْتَغْفِرُ اللّٰهَ', n: 100, daily: 1000 },
+  { k: 'durood',    ur: 'درود شریف',         ar: 'اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ وَعَلَىٰ آلِ مُحَمَّدٍ', n: 100, daily: 1000 },
+  { k: 'kalima_f',  ur: 'کلمہ توحید (بعد فجر)', ar: 'لَا إِلَٰهَ إِلَّا اللّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ', n: 100, daily: 100 },
+  { k: 'kalima_a',  ur: 'کلمہ توحید (بعد عصر)', ar: 'لَا إِلَٰهَ إِلَّا اللّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ', n: 100, daily: 100 },
   { k: 'tasbih',    ur: 'سبحان اللہ وبحمدہ', ar: 'سُبْحَانَ اللّٰهِ وَبِحَمْدِهِ سُبْحَانَ اللّٰهِ الْعَظِيمِ', n: 100 }
 ];
 
@@ -618,6 +620,11 @@ function parse(text) {
     if (three) return { list: [full(112), full(113), full(114)], trans: transFlag };
   }
   /* ذکر */
+  if (!(toks.indexOf(norm('سورہ')) >= 0 || toks.indexOf('surah') >= 0) && toks.some(t => ['کلمہ', 'kalima', 'توحید', 'tauheed', 'tawheed'].map(norm).some(k => t.indexOf(k) === 0))) {
+    const isAsr = toks.some(t => t.indexOf(norm('عصر')) === 0 || t === 'asr'), isFajr = toks.some(t => t.indexOf(norm('فجر')) === 0 || t === 'fajr');
+    const key = isAsr ? 'kalima_a' : isFajr ? 'kalima_f' : (new Date().getHours() < 15 ? 'kalima_f' : 'kalima_a');
+    return { zikr: key, n: parseCount(toks), auto: true };
+  }
   const zk = [['durood', ['درود', 'durood', 'darood']], ['istighfar', ['استغفار', 'istighfar']], ['sub', ['سبحان', 'subhan']], ['alhamd', ['الحمد', 'alhamd']], ['akbar', ['اکبر', 'akbar']], ['', ['ذکر', 'تسبیح', 'zikr', 'tasbeeh', 'tasbih']]];
   const hasSurahWord = toks.indexOf(norm('سورہ')) >= 0 || toks.indexOf('surah') >= 0;
   if (!hasSurahWord) {
@@ -864,7 +871,7 @@ function addDayTotal(n) {
 function saveZ() { if (Z.item) lsSet('qs_z', JSON.stringify({ k: Z.item.k, count: Z.count, target: Z.target })); }
 function updateZ() {
   $('zCount').textContent = Z.count + ' / ' + Z.target;
-  $('zTotal').textContent = 'آج کا ' + (Z.item ? Z.item.ur : 'ذکر') + ': ' + getDayTotal();
+  { const dt = getDayTotal(), dl = Z.item && Z.item.daily; $('zTotal').textContent = 'آج کا ' + (Z.item ? Z.item.ur : 'ذکر') + ': ' + dt + (dl ? ' / ' + dl + (dt >= dl ? ' ✓' : '') : ''); }
   $('zTarget').textContent = 'ہدف: ' + Z.target;
   $('zTarget').setAttribute('aria-label', 'ہدف ' + Z.target + '، بدلنے کے لیے دبائیں');
   tapLabel();
@@ -977,11 +984,12 @@ function autoMaybe() {
 function zikrTap(quiet) {
   if (!Z.item) return;
   if (Z.count >= Z.target) { tone('done'); announce('ہدف مکمل ہو چکا ہے۔ نیا شروع کرنے کے لیے "صفر سے شروع" دبائیں', true); return; }
-  Z.count++; addDayTotal(1); saveZ();
+  Z.count++; const dtot = addDayTotal(1); saveZ();
+  const dgoal = Z.item.daily && dtot === Z.item.daily;
   if (Z.count >= Z.target) {
     Z.done = true; releaseWake(); updateZ(); autoStop();
     tone('done'); setTimeout(() => playClip('done'), 700);
-    announce('ماشاءاللہ! آپ کا ہدف ' + Z.target + ' مکمل ہو گیا', true);
+    announce('ماشاءاللہ! آپ کا ہدف ' + Z.target + ' مکمل ہو گیا' + (dgoal ? '۔ آج کا روزانہ ہدف بھی پورا ہوا' : ''), true);
     say('آپ کا ہدف مکمل ہو گیا');
     return;
   }
@@ -1034,7 +1042,7 @@ function startZikr(it, opts) {
   announce(it.ur + '، ' + Z.count + ' / ' + Z.target);
   setTimeout(() => { try { $('zTap').focus({ preventScroll: true }); } catch (e) {} }, 80);
 }
-function showZPick() { autoStop(); stopZikr(); $('zPick').hidden = false; $('zRun').hidden = true; }
+function showZPick() { autoStop(); stopZikr(); try { refreshPick(); } catch (e) {} $('zPick').hidden = false; $('zRun').hidden = true; }
 function openZikr(key, opts) {
   opts = opts || {};
   pausePlayback(); stopListening();
@@ -1077,10 +1085,11 @@ function build() {
     all.appendChild(b);
   });
   const zp = $('zPick');
+  window.refreshPick = function () { const bs = $('zPick').children; ZIKR.forEach((z, i) => { if (z.daily && bs[i]) bs[i].lastChild.textContent = 'روزانہ ' + z.daily + ' — آج ' + getDayTotal(z.k); }); };
   ZIKR.forEach(z => {
     const b = document.createElement('button'); b.type = 'button';
     b.innerHTML = '<span></span><small></small>';
-    b.firstChild.textContent = z.ur; b.lastChild.textContent = z.n + ' بار';
+    b.firstChild.textContent = z.ur; b.lastChild.textContent = z.daily ? ('روزانہ ' + z.daily + ' — آج ' + getDayTotal(z.k)) : (z.n + ' بار');
     b.setAttribute('aria-label', z.ur + '، ' + z.n + ' بار');
     b.onclick = () => startZikr(z);
     zp.appendChild(b);
